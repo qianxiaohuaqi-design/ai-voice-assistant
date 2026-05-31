@@ -234,9 +234,9 @@
     .brand-icon {
       width: 12px;
       height: 12px;
-      background: var(--neon-cyan);
+      background: #8b5cf6;
       border-radius: 50%;
-      box-shadow: 0 0 10px var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.65);
       animation: pulse 2s infinite;
     }
 
@@ -1129,9 +1129,13 @@
       font-weight: 400;
       color: rgba(255, 255, 255, 0.7);
       display: block;
+      border-left: none;
+      padding-left: 0;
     }
     body.light-theme #orb-subtitle .translation-line {
       color: rgba(0, 0, 0, 0.65);
+      border-left: none;
+      padding-left: 0;
     }
 
     /* Monospace Tech Footer */
@@ -1827,7 +1831,7 @@
 
         <!-- Bottom Telemetry/Status Bar -->
         <div class="orb-tech-footer">
-          <span id="tech-clock">00:00:00</span>
+          <span id="tech-thinking-time">思考时间 · 0.0s</span>
           <span class="separator">·</span>
           <span class="status-dot" id="tech-status-dot"></span>
           <span id="tech-status-text">idle</span>
@@ -2042,10 +2046,10 @@
           <label class="form-label">界面主题</label>
           <div style="display: flex; gap: 10px;">
             <button type="button" class="theme-select-btn active" id="theme-dark-btn" onclick="setTheme('dark')">
-              🌙 深色模式
+              深色模式
             </button>
             <button type="button" class="theme-select-btn" id="theme-light-btn" onclick="setTheme('light')">
-              ☀️ 浅色模式
+              浅色模式
             </button>
           </div>
         </div>
@@ -2261,19 +2265,7 @@
       isMuted = localStorage.getItem('is_muted') === 'true';
       updateMuteUI();
 
-      // Start Clock Timer
-      setInterval(() => {
-        const now = new Date();
-        const clockEl = document.getElementById('tech-clock');
-        if (clockEl) {
-          clockEl.innerText = now.toTimeString().split(' ')[0];
-        }
-      }, 1000);
-      
-      // Run once immediately
-      const now = new Date();
-      const clockEl = document.getElementById('tech-clock');
-      if (clockEl) clockEl.innerText = now.toTimeString().split(' ')[0];
+      // Clock timer removed (replaced with thinking time telemetries)
 
       // Check if API keys are set, if not pop up the settings modal automatically
       if (!localStorage.getItem('anthropic_key') || !localStorage.getItem('elevenlabs_key')) {
@@ -3137,6 +3129,7 @@
         updateTechStatus('thinking');
         startThinkingAnimation();
         typewriteSubtitle('Thinking...');
+        startThinkingTimer();
       }
 
       const aiMessageId = 'ai-msg-' + Date.now();
@@ -3179,6 +3172,7 @@
         }
 
         const data = await response.json();
+        stopThinkingTimer();
         
         updateMessage(aiMessageId, data.text);
 
@@ -3205,6 +3199,7 @@
         }
 
       } catch (err) {
+        stopThinkingTimer();
         if (err.name === 'AbortError') {
           console.log('Chat request was aborted.');
           updateTechStatus('idle');
@@ -3238,6 +3233,8 @@
     // Subtitle management for Immersive Orb Mode with fade-in/fade-out transitions
     let chatAbortController = null;
     let currentSendBtnState = 'send';
+    let thinkingStartTime = null;
+    let thinkingTimerInterval = null;
     let currentSentences = [];
     let currentSentenceTimes = []; // { start, end } for each sentence
     let activeSentenceIndex = -1;
@@ -3321,8 +3318,11 @@
                   .trim();
       }
 
+      // Check if translation is enabled in settings
+      const transEnable = localStorage.getItem('translate_enable') === 'true';
+
       const sentences = [];
-      if (rawText.includes('<translation>') || rawText.includes('<translation')) {
+      if (transEnable && (rawText.includes('<translation>') || rawText.includes('<translation'))) {
         // Parse sentences with translation tags, supporting optional/unclosed translation blocks
         const regex = /([^<]+)(?:<translation>([^<]*)(?:<\/translation>)?)?/gi;
         let match;
@@ -3337,8 +3337,15 @@
           });
         }
       } else {
-        // No translation tags, split by sentence endings. Supports Chinese punctuation splits without spaces.
-        const parts = rawText.split(/(?<=[。！？.!?])\s*/);
+        // No translation tags or translation is disabled, split by sentence endings.
+        // Even if rawText contains translation tags, if transEnable is false, we strip them out and only show the main text.
+        let cleanText = rawText;
+        if (!transEnable) {
+          cleanText = rawText.replace(/<translation>.*?<\/translation>/gi, '');
+          cleanText = cleanText.replace(/<translation>[^<]*/gi, ''); // strip unclosed
+        }
+        
+        const parts = cleanText.split(/(?<=[。！？.!?])\s*/);
         parts.forEach(part => {
           if (part.trim()) {
             sentences.push({
@@ -3605,8 +3612,42 @@
       }
     }
 
+    function startThinkingTimer() {
+      if (thinkingTimerInterval) {
+        clearInterval(thinkingTimerInterval);
+      }
+      thinkingStartTime = Date.now();
+      const thinkingTimeEl = document.getElementById('tech-thinking-time');
+      if (thinkingTimeEl) {
+        thinkingTimeEl.innerText = '思考时间 · 0.0s';
+      }
+      thinkingTimerInterval = setInterval(() => {
+        if (!thinkingStartTime) return;
+        const elapsed = ((Date.now() - thinkingStartTime) / 1000).toFixed(1);
+        if (thinkingTimeEl) {
+          thinkingTimeEl.innerText = `思考时间 · ${elapsed}s`;
+        }
+      }, 100);
+    }
+
+    function stopThinkingTimer() {
+      if (thinkingTimerInterval) {
+        clearInterval(thinkingTimerInterval);
+        thinkingTimerInterval = null;
+      }
+      if (thinkingStartTime) {
+        const elapsed = ((Date.now() - thinkingStartTime) / 1000).toFixed(1);
+        const thinkingTimeEl = document.getElementById('tech-thinking-time');
+        if (thinkingTimeEl) {
+          thinkingTimeEl.innerText = `思考时间 · ${elapsed}s`;
+        }
+        thinkingStartTime = null;
+      }
+    }
+
     function handleCancelCurrentAction() {
       console.log('Cancelling current action...');
+      stopThinkingTimer();
       
       // 1. Abort fetch request
       if (chatAbortController) {
