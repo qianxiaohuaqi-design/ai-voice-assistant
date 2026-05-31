@@ -1153,6 +1153,8 @@
       pointer-events: none;
       z-index: 6;
       text-transform: lowercase;
+      white-space: nowrap;
+      flex-wrap: nowrap;
     }
     body.light-theme .orb-tech-footer {
       color: rgba(0, 0, 0, 0.5);
@@ -1829,12 +1831,13 @@
           <p id="orb-subtitle"></p>
         </div>
 
-        <!-- Bottom Telemetry/Status Bar -->
         <div class="orb-tech-footer">
           <span class="status-dot" id="tech-status-dot"></span>
           <span id="tech-status-text">idle</span>
-          <span class="separator">·</span>
-          <span id="tech-thinking-time">thinking time: 00s</span>
+          <span class="separator" id="tech-thinking-separator" style="display: none;">·</span>
+          <span id="tech-thinking-time" style="display: none;">thinking time: 00s</span>
+          <span class="separator" id="tech-duration-separator" style="display: none;">·</span>
+          <span id="tech-duration" style="display: none;">00:00 / 00:00</span>
         </div>
       </div>
 
@@ -3584,6 +3587,17 @@
           statusDot.classList.add('thinking');
         }
       }
+
+      // Manage visibility of time indicators
+      const thinkingSep = document.getElementById('tech-thinking-separator');
+      const thinkingTime = document.getElementById('tech-thinking-time');
+      const durationSep = document.getElementById('tech-duration-separator');
+      const durationVal = document.getElementById('tech-duration');
+
+      if (thinkingSep) thinkingSep.style.display = (status === 'thinking') ? 'inline' : 'none';
+      if (thinkingTime) thinkingTime.style.display = (status === 'thinking') ? 'inline' : 'none';
+      if (durationSep) durationSep.style.display = (status === 'speaking') ? 'inline' : 'none';
+      if (durationVal) durationVal.style.display = (status === 'speaking') ? 'inline' : 'none';
 
       // Sync send button state with tech status
       if (status === 'speaking' || status === 'thinking') {
