@@ -515,7 +515,7 @@
       justify-content: center;
       cursor: pointer;
       box-shadow: var(--accent-glow);
-      transition: transform 0.2s, opacity 0.2s;
+      transition: background 0.3s, transform 0.2s, opacity 0.2s;
     }
 
     .send-btn:active {
@@ -524,6 +524,11 @@
 
     .send-btn:hover {
       opacity: 0.9;
+    }
+
+    .send-btn.stop-state {
+      background: #ef4444;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
     }
 
     /* Settings Modal Panel */
@@ -833,6 +838,7 @@
 
     /* HUD Corner Brackets */
     .hud-corner {
+      display: none;
       position: absolute;
       width: 12px;
       height: 12px;
@@ -874,7 +880,7 @@
       display: flex;
       justify-content: space-between;
       font-family: monospace;
-      font-size: 13px;
+      font-size: 10px;
       line-height: 1.5;
       color: rgba(255, 255, 255, 0.35);
       pointer-events: none;
@@ -3093,6 +3099,11 @@
     }
 
     async function sendMessage() {
+      if (currentSendBtnState === 'stop') {
+        handleCancelCurrentAction();
+        return;
+      }
+
       const inputEl = document.getElementById('chat-input');
       const text = inputEl.value.trim();
       if (!text) return;
@@ -3133,6 +3144,13 @@
 
       scrollToBottom();
 
+      // Abort any ongoing request before starting a new one
+      if (chatAbortController) {
+        chatAbortController.abort();
+      }
+      chatAbortController = new AbortController();
+      const signal = chatAbortController.signal;
+
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
@@ -3151,7 +3169,8 @@
             elevenlabs_model: eModel,
             translate_enabled: transEnable,
             translate_target: transTarget
-          })
+          }),
+          signal: signal
         });
 
         if (!response.ok) {
@@ -3173,6 +3192,11 @@
 
         if (!isMuted && data.audio) {
           playSpeech(aiMessageId, data.audio);
+        } else {
+          updateTechStatus('idle');
+          if (currentViewMode === 'orb') {
+            stopThinkingAnimation();
+          }
         }
 
         if (data.error) {
@@ -3181,13 +3205,21 @@
         }
 
       } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Chat request was aborted.');
+          updateTechStatus('idle');
+          return;
+        }
         console.error('Request error:', err);
         const errMsg = `❌ **错误**：${err.message || '请求处理失败。'}`;
         updateMessage(aiMessageId, errMsg);
+        updateTechStatus('idle');
         if (currentViewMode === 'orb') {
           stopThinkingAnimation();
           typewriteSubtitle(errMsg);
         }
+      } finally {
+        chatAbortController = null;
       }
 
       scrollToBottom();
@@ -3204,6 +3236,8 @@
     }
 
     // Subtitle management for Immersive Orb Mode with fade-in/fade-out transitions
+    let chatAbortController = null;
+    let currentSendBtnState = 'send';
     let currentSentences = [];
     let currentSentenceTimes = []; // { start, end } for each sentence
     let activeSentenceIndex = -1;
@@ -3537,6 +3571,77 @@
           statusDot.classList.add('thinking');
         }
       }
+
+      // Sync send button state with tech status
+      if (status === 'speaking' || status === 'thinking') {
+        updateSendBtnState('stop');
+      } else {
+        updateSendBtnState('send');
+      }
+    }
+
+    function updateSendBtnState(state) {
+      const sendBtn = document.getElementById('send-btn');
+      if (!sendBtn) return;
+      
+      currentSendBtnState = state;
+      if (state === 'stop') {
+        sendBtn.classList.add('stop-state');
+        sendBtn.title = '终止';
+        sendBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+          </svg>
+        `;
+      } else {
+        sendBtn.classList.remove('stop-state');
+        sendBtn.title = '发送';
+        sendBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        `;
+      }
+    }
+
+    function handleCancelCurrentAction() {
+      console.log('Cancelling current action...');
+      
+      // 1. Abort fetch request
+      if (chatAbortController) {
+        chatAbortController.abort();
+        chatAbortController = null;
+      }
+      
+      // 2. Stop audio playback
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+      }
+      
+      // 3. Reset animations & UI states
+      stopThinkingAnimation();
+      stopOrbAnimation();
+      stopAllWaveforms();
+      if (currentViewMode === 'orb') {
+        startNebulaLoop();
+        
+        // Clear subtitle with fade-out
+        const subtitleEl = document.getElementById('orb-subtitle');
+        if (subtitleEl) {
+          subtitleEl.className = 'fading-out';
+          setTimeout(() => {
+            subtitleEl.innerHTML = '';
+            subtitleEl.className = '';
+          }, 400);
+        }
+        currentSentences = [];
+        currentSentenceTimes = [];
+      }
+      
+      // 4. Update tech status
+      updateTechStatus('idle');
     }
 
     function getGlobalAudio() {
