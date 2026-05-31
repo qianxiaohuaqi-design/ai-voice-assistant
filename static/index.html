@@ -1831,10 +1831,10 @@
 
         <!-- Bottom Telemetry/Status Bar -->
         <div class="orb-tech-footer">
-          <span id="tech-thinking-time">思考时间 · 0.0s</span>
-          <span class="separator">·</span>
           <span class="status-dot" id="tech-status-dot"></span>
           <span id="tech-status-text">idle</span>
+          <span class="separator">·</span>
+          <span id="tech-thinking-time">thinking time: 00s</span>
         </div>
       </div>
 
@@ -2484,7 +2484,12 @@
       if (currentViewMode === 'orb' && chatHistory.length > 0) {
         const lastMsg = chatHistory[chatHistory.length - 1];
         if (lastMsg.role === 'assistant') {
-          typewriteSubtitle(lastMsg.content);
+          // Only refresh/show subtitle if audio is actively playing or status is not idle
+          const statusText = document.getElementById('tech-status-text');
+          const isIdle = !statusText || statusText.innerText === 'idle';
+          if (!isIdle || (currentAudio && !currentAudio.paused)) {
+            typewriteSubtitle(lastMsg.content);
+          }
         }
       }
       
@@ -2961,6 +2966,7 @@
       localStorage.setItem('translate_target', transTarget);
       
       updateHUDModelInfo();
+      renderChatUI(); // Re-render chat UI to immediately apply new translation / settings
       closeModal();
       showToast('设置保存成功！', 2000);
     }
@@ -3619,15 +3625,15 @@
       thinkingStartTime = Date.now();
       const thinkingTimeEl = document.getElementById('tech-thinking-time');
       if (thinkingTimeEl) {
-        thinkingTimeEl.innerText = '思考时间 · 0.0s';
+        thinkingTimeEl.innerText = 'thinking time: 00s';
       }
       thinkingTimerInterval = setInterval(() => {
         if (!thinkingStartTime) return;
-        const elapsed = ((Date.now() - thinkingStartTime) / 1000).toFixed(1);
+        const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
         if (thinkingTimeEl) {
-          thinkingTimeEl.innerText = `思考时间 · ${elapsed}s`;
+          thinkingTimeEl.innerText = `thinking time: ${elapsed.toString().padStart(2, '0')}s`;
         }
-      }, 100);
+      }, 1000);
     }
 
     function stopThinkingTimer() {
@@ -3636,10 +3642,10 @@
         thinkingTimerInterval = null;
       }
       if (thinkingStartTime) {
-        const elapsed = ((Date.now() - thinkingStartTime) / 1000).toFixed(1);
+        const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
         const thinkingTimeEl = document.getElementById('tech-thinking-time');
         if (thinkingTimeEl) {
-          thinkingTimeEl.innerText = `思考时间 · ${elapsed}s`;
+          thinkingTimeEl.innerText = `thinking time: ${elapsed.toString().padStart(2, '0')}s`;
         }
         thinkingStartTime = null;
       }
