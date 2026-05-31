@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local configuration / secrets
+.env
+claude_desktop_config.json
+
+# Logs & temp files
+*.log
+.tempmediaStorage/
+.system_generated/

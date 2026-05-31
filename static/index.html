@@ -1,0 +1,3771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Claude 智能语音助手</title>
+  <meta name="description" content="基于 Claude 和 ElevenLabs 的高品质个人语音助手网页应用">
+  
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Marked JS for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0a0a0c;
+      --bg-card: rgba(20, 20, 25, 0.6);
+      --bg-bubble-user: linear-gradient(135deg, #7c3aed, #4f46e5);
+      --bg-bubble-ai: rgba(255, 255, 255, 0.04);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-glow: 0px 0px 20px rgba(124, 58, 237, 0.4);
+      --neon-cyan: #22d3ee;
+      --neon-pink: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .app-container {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 260px;
+      background-color: #0a0a0c;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100%;
+      z-index: 50;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+    }
+
+    .new-chat-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-main);
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .new-chat-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(124, 58, 237, 0.4);
+    }
+
+    .sessions-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .session-item:hover, .session-item.active {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+    }
+
+    .session-item.active {
+      background: rgba(124, 58, 237, 0.1);
+      border-left: 3px solid #7c3aed;
+      border-radius: 4px 10px 10px 4px;
+      font-weight: 500;
+    }
+
+    .session-title-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .session-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-actions {
+      display: none;
+      align-items: center;
+    }
+
+    .session-item:hover .session-actions {
+      display: flex;
+    }
+
+    .session-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .session-action-btn:hover {
+      color: var(--neon-pink);
+      background: rgba(244, 63, 94, 0.1);
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 45;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Ambient Background Glows */
+    body::before {
+      content: '';
+      position: absolute;
+      top: -10%;
+      left: -20%;
+      width: 60%;
+      height: 50%;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      right: -20%;
+      width: 60%;
+      height: 50%;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header Styling */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: rgba(10, 10, 12, 0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 12px;
+      height: 12px;
+      background: var(--neon-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--neon-cyan);
+      animation: pulse 2s infinite;
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(to right, #fff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.3rem;
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .icon-btn:active {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border-color);
+    }
+
+    /* Chat Container */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      z-index: 5;
+    }
+
+    /* Message Bubbles */
+    .message-row {
+      display: flex;
+      width: 100%;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .message-row.ai {
+      justify-content: flex-start;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .message-row.user .bubble {
+      background: var(--bg-bubble-user);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      font-weight: 500;
+    }
+
+    .message-row.ai .bubble {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-bottom-left-radius: 4px;
+    }
+
+    .bubble p {
+      margin-bottom: 8px;
+    }
+    .bubble p:last-child {
+      margin-bottom: 0;
+    }
+    .bubble ul, .bubble ol {
+      margin-left: 20px;
+      margin-bottom: 8px;
+    }
+    .bubble code {
+      font-family: monospace;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    /* Waveform visualizer */
+    .bubble-audio-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      width: fit-content;
+      transition: all 0.2s;
+    }
+
+    .bubble-audio-btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .waveform-visualizer {
+      display: none;
+      align-items: center;
+      gap: 3px;
+      height: 14px;
+    }
+
+    .waveform-visualizer.playing {
+      display: flex;
+    }
+
+    .wave-bar {
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(to top, var(--neon-cyan), #8b5cf6);
+      border-radius: 1px;
+      animation: wave-bounce 0.8s ease-in-out infinite alternate;
+    }
+
+    .wave-bar:nth-child(1) { animation-delay: 0.1s; height: 30%; }
+    .wave-bar:nth-child(2) { animation-delay: 0.3s; height: 70%; }
+    .wave-bar:nth-child(3) { animation-delay: 0.2s; height: 100%; }
+    .wave-bar:nth-child(4) { animation-delay: 0.4s; height: 50%; }
+    .wave-bar:nth-child(5) { animation-delay: 0.15s; height: 80%; }
+
+    @keyframes wave-bounce {
+      0% { transform: scaleY(0.3); }
+      100% { transform: scaleY(1.0); }
+    }
+
+    /* Input Bar styling */
+    .input-bar {
+      position: relative;
+      z-index: 10;
+      background: rgba(10, 10, 12, 0.8);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-color);
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 12px));
+      display: flex;
+      flex-direction: column;
+    }
+
+    .input-box-container {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 14px;
+      transition: all 0.3s;
+    }
+
+    .input-box-container:focus-within {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(124, 58, 237, 0.5);
+      box-shadow: 0 0 15px rgba(124, 58, 237, 0.15);
+    }
+
+    .chat-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.02rem;
+      padding: 8px 6px;
+      outline: none;
+      font-family: inherit;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.5;
+    }
+
+    .input-actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 10px;
+    }
+
+    .actions-left, .actions-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .model-select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 4px 28px 4px 10px;
+      font-size: 0.8rem;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 14px;
+    }
+
+    .model-select:focus {
+      border-color: #7c3aed;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .mic-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      transition: all 0.2s;
+    }
+
+    .mic-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+    }
+
+    .mic-btn.recording {
+      color: var(--neon-pink);
+      animation: pulse-red 1.5s infinite;
+    }
+
+    .send-btn {
+      background: var(--bg-bubble-user);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--accent-glow);
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+
+    .send-btn:hover {
+      opacity: 0.9;
+    }
+
+    /* Settings Modal Panel */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      background: #0f0f12;
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      border-top: 1px solid var(--border-color);
+      padding: 24px 20px 40px;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.94, 0.6, 1);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.open .modal-sheet {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-main);
+      padding: 12px;
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+    }
+
+    /* Style for dropdown select tags */
+    select.form-input {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 18px;
+      padding-right: 36px;
+    }
+
+    .form-input:focus {
+      border-color: #7c3aed;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .save-btn {
+      width: 100%;
+      background: var(--bg-bubble-user);
+      border: none;
+      color: white;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: var(--accent-glow);
+      margin-top: 10px;
+    }
+
+    .save-btn:active {
+      opacity: 0.9;
+    }
+
+    /* Audio Mute toggle state */
+    .mute-btn.muted {
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+
+    /* Animations */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { background: rgba(244, 63, 94, 0); transform: scale(1); }
+      50% { background: rgba(244, 63, 94, 0.15); transform: scale(1.05); }
+    }
+
+    /* Status Banner */
+    .status-toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(15, 15, 18, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      color: var(--text-main);
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(124, 58, 237, 0.25);
+    }
+
+    .status-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Theme button styles */
+    .theme-select-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .theme-select-btn.active {
+      background: var(--bg-bubble-user) !important;
+      border-color: transparent !important;
+      color: white !important;
+      box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+    }
+
+    /* Light Theme Settings Override */
+    body.light-theme {
+      --bg-dark: #f0f2f5;
+      --bg-card: rgba(255, 255, 255, 0.7);
+      --bg-bubble-user: linear-gradient(135deg, #7c3aed, #4f46e5);
+      --bg-bubble-ai: rgba(255, 255, 255, 0.8);
+      --border-color: rgba(0, 0, 0, 0.08);
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --accent-glow: 0px 0px 20px rgba(124, 58, 237, 0.15);
+    }
+    body.light-theme::before {
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.05) 0%, transparent 70%);
+    }
+    body.light-theme::after {
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.05) 0%, transparent 70%);
+    }
+    body.light-theme header {
+      background: rgba(240, 242, 245, 0.8);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    body.light-theme select.form-input {
+      background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    }
+    body.light-theme .theme-select-btn {
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: #1f2937;
+    }
+    body.light-theme .input-bar {
+      background: rgba(240, 242, 245, 0.9);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    body.light-theme .input-container {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    body.light-theme .chat-input {
+      color: #1f2937;
+    }
+    body.light-theme .modal-sheet {
+      background: #ffffff;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    body.light-theme .form-input {
+      background-color: rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      color: #1f2937;
+    }
+    body.light-theme .voice-management-card {
+      background-color: rgba(0, 0, 0, 0.01) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    }
+    body.light-theme .message-row.ai .bubble {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    body.light-theme .brand-title {
+      background: linear-gradient(to right, #1f2937, #4b5563);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    body.light-theme .voice-orb {
+      background: radial-gradient(circle at 30% 30%, rgba(34, 211, 238, 0.15) 0%, rgba(124, 58, 237, 0.05) 60%, rgba(255, 255, 255, 0.7) 100%);
+      border: 2px solid rgba(124, 58, 237, 0.5);
+      box-shadow: 0 0 15px rgba(124, 58, 237, 0.3), 
+                  inset 0 0 10px rgba(124, 58, 237, 0.2);
+    }
+    body.light-theme .status-toast {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      color: #1f2937;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 15px rgba(124, 58, 237, 0.15);
+    }
+    
+    /* Sidebar Light Theme Overrides */
+    body.light-theme .sidebar {
+      background-color: #ffffff;
+      border-right: 1px solid var(--border-color);
+    }
+    body.light-theme .new-chat-btn {
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+    body.light-theme .new-chat-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(124, 58, 237, 0.4);
+    }
+    body.light-theme .session-item {
+      color: var(--text-muted);
+    }
+    body.light-theme .session-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-main);
+    }
+    body.light-theme .session-item.active {
+      background: rgba(124, 58, 237, 0.08);
+      color: #7c3aed;
+      border-left: 3px solid #7c3aed;
+    }
+    body.light-theme .session-item.active .session-title-wrapper {
+      color: #7c3aed;
+    }
+    body.light-theme .session-item.active .session-title {
+      font-weight: 600;
+    }
+    body.light-theme .sidebar-footer {
+      background: #f3f4f6;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Immersive Sphere mode container styles */
+    .orb-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      position: relative;
+      z-index: 5;
+      padding: 20px;
+      gap: 30px;
+      overflow: hidden;
+    }
+
+    .orb-wrapper.active {
+      display: flex;
+    }
+
+    /* HUD Corner Brackets */
+    .hud-corner {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: rgba(255, 255, 255, 0.15);
+      border-style: solid;
+      pointer-events: none;
+      z-index: 6;
+    }
+    body.light-theme .hud-corner {
+      border-color: rgba(0, 0, 0, 0.15);
+    }
+    .hud-corner.top-left {
+      top: 20px;
+      left: 20px;
+      border-width: 1px 0 0 1px;
+    }
+    .hud-corner.top-right {
+      top: 20px;
+      right: 20px;
+      border-width: 1px 1px 0 0;
+    }
+    .hud-corner.bottom-left {
+      bottom: 20px;
+      left: 20px;
+      border-width: 0 0 1px 1px;
+    }
+    .hud-corner.bottom-right {
+      bottom: 20px;
+      right: 20px;
+      border-width: 0 1px 1px 0;
+    }
+
+    /* Monospace Technical Header */
+    .orb-tech-header {
+      position: absolute;
+      top: 35px;
+      left: 35px;
+      right: 35px;
+      display: flex;
+      justify-content: space-between;
+      font-family: monospace;
+      font-size: 10px;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+      z-index: 6;
+      text-transform: lowercase;
+    }
+    body.light-theme .orb-tech-header {
+      color: rgba(0, 0, 0, 0.4);
+    }
+    .orb-tech-header .tech-header-right {
+      text-align: right;
+    }
+
+    /* Container for the orb and orbits */
+    .orb-visualizer-container {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The Concentric Rings */
+    .orb-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease, border-color 0.2s ease;
+      pointer-events: none;
+    }
+    body.light-theme .orb-ring {
+      border: 1px dashed rgba(0, 0, 0, 0.08);
+    }
+
+    .ring-1 {
+      width: 100px;
+      height: 100px;
+      animation: spin-clockwise 25s infinite linear;
+    }
+    .ring-2 {
+      width: 160px;
+      height: 160px;
+      animation: spin-counter 35s infinite linear;
+    }
+    .ring-3 {
+      width: 220px;
+      height: 220px;
+      animation: spin-clockwise 45s infinite linear;
+    }
+    .ring-4 {
+      width: 280px;
+      height: 280px;
+      animation: spin-counter 60s infinite linear;
+    }
+
+    /* Planetary orbital dots */
+    .ring-1::after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background-color: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    body.light-theme .ring-1::after {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+    .ring-2::after {
+      content: '';
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background-color: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      top: 50%;
+      left: 0;
+      transform: translate(-50%, -50%);
+    }
+    body.light-theme .ring-2::after {
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+    .ring-3::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background-color: rgba(255, 255, 255, 0.25);
+      border-radius: 50%;
+      bottom: 0;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    body.light-theme .ring-3::after {
+      background-color: rgba(0, 0, 0, 0.15);
+    }
+    .ring-4::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      top: 50%;
+      right: 0;
+      transform: translate(-50%, -50%);
+    }
+    body.light-theme .ring-4::after {
+      background-color: rgba(0, 0, 0, 0.12);
+    }
+
+    /* The Central Voice Orb */
+    .voice-orb {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95) 0%, rgba(139, 92, 246, 0.2) 50%, rgba(124, 58, 237, 0.08) 100%);
+      border: 2px solid rgba(124, 58, 237, 0.45);
+      box-shadow: 0 0 15px rgba(124, 58, 237, 0.25), inset 0 0 10px rgba(255, 255, 255, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, border-color 0.2s;
+      z-index: 5;
+    }
+    body.light-theme .voice-orb {
+      background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(124, 58, 237, 0.05) 100%);
+      border: 2px solid rgba(124, 58, 237, 0.35);
+      box-shadow: 0 0 15px rgba(124, 58, 237, 0.15), inset 0 0 8px rgba(124, 58, 237, 0.1);
+    }
+
+    .orb-inner-core, .orb-particle {
+      display: none;
+    }
+
+    @keyframes spin-clockwise {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes spin-counter {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(-360deg); }
+    }
+
+    /* Subtitle area under the orb */
+    .orb-subtitle-container {
+      max-width: 85%;
+      text-align: center;
+      min-height: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 6;
+      margin-bottom: 20px;
+    }
+
+    #orb-subtitle {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 1.25rem;
+      line-height: 1.7;
+      color: var(--text-main);
+      opacity: 0.95;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+    body.light-theme #orb-subtitle {
+      text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Streaming subtitle classes */
+    .completed-sentence {
+      opacity: 0.45;
+      filter: blur(0.3px);
+      transition: all 0.5s ease;
+      display: inline;
+      margin-right: 4px;
+    }
+    .current-sentence {
+      opacity: 1;
+      display: inline;
+      font-weight: 500;
+    }
+    @keyframes char-glow-in {
+      0% {
+        opacity: 0;
+        transform: scale(0.85) translateY(2px);
+        text-shadow: 0 0 10px rgba(34, 211, 238, 0.9), 0 0 20px rgba(124, 58, 237, 0.4);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        text-shadow: none;
+      }
+    }
+    .stream-char {
+      display: inline-block;
+      animation: char-glow-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      white-space: pre-wrap;
+    }
+    .glowing-dots {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      vertical-align: middle;
+    }
+    .glowing-dots span {
+      font-size: 1.5rem;
+      line-height: 0.5;
+      font-weight: 800;
+      animation: dot-glow 1.4s infinite both;
+    }
+    .glowing-dots span:nth-child(1) { animation-delay: 0s; }
+    .glowing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .glowing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot-glow {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.3); text-shadow: 0 0 12px var(--neon-cyan); }
+    }
+    @keyframes translation-fade-in {
+      from { opacity: 0; transform: translateY(5px); filter: blur(2px); }
+      to { opacity: 0.75; transform: translateY(0); filter: none; }
+    }
+    .stream-translation {
+      animation: translation-fade-in 0.8s ease forwards;
+      margin-top: 10px;
+    }
+
+    /* Monospace Tech Footer */
+    .orb-tech-footer {
+      position: absolute;
+      bottom: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+      z-index: 6;
+      text-transform: lowercase;
+    }
+    body.light-theme .orb-tech-footer {
+      color: rgba(0, 0, 0, 0.5);
+    }
+    .orb-tech-footer .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 10px #10b981;
+      transition: background-color 0.3s, box-shadow 0.3s;
+      animation: dot-pulse 1.8s infinite ease-in-out;
+    }
+    .orb-tech-footer .status-dot.speaking {
+      background-color: #f97316;
+      box-shadow: 0 0 10px #f97316;
+    }
+    .orb-tech-footer .status-dot.recording {
+      background-color: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+    }
+    .orb-tech-footer .status-dot.thinking {
+      background-color: #8b5cf6;
+      box-shadow: 0 0 10px #8b5cf6;
+    }
+    @keyframes dot-pulse {
+      0%, 100% { opacity: 0.45; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+    .orb-tech-footer .separator {
+      color: rgba(255, 255, 255, 0.2);
+    }
+    body.light-theme .orb-tech-footer .separator {
+      color: rgba(0, 0, 0, 0.15);
+    }
+
+    .voice-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    body.light-theme .voice-item-row {
+      background: rgba(0,0,0,0.02);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .delete-voice-btn {
+      background: transparent;
+      border: none;
+      color: var(--neon-pink);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .delete-voice-btn:hover {
+      background: rgba(244, 63, 94, 0.1);
+    }
+
+    /* Mobile Responsive Sidebar Styles */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        transform: translateX(-100%);
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+      }
+      
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      #sidebar-toggle-btn {
+        display: flex !important;
+      }
+
+      /* Shrink visualizer size to fit smaller viewports */
+      .orb-visualizer-container {
+        width: 240px;
+        height: 240px;
+      }
+      .ring-1 {
+        width: 80px;
+        height: 80px;
+      }
+      .ring-2 {
+        width: 130px;
+        height: 130px;
+      }
+      .ring-3 {
+        width: 180px;
+        height: 180px;
+      }
+      .ring-4 {
+        width: 230px;
+        height: 230px;
+      }
+      .orb-wrapper {
+        gap: 15px;
+      }
+      .orb-tech-header {
+        top: 15px;
+        left: 20px;
+        right: 20px;
+      }
+      .orb-tech-footer {
+        bottom: 15px;
+      }
+    }
+
+    /* Custom Dropdown Styles */
+    .custom-select-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .custom-select-trigger {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-main);
+      padding: 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    
+    body.light-theme .custom-select-trigger {
+      background-color: rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      color: #1f2937;
+    }
+
+    .custom-select-trigger:focus, .custom-select-container.open .custom-select-trigger {
+      border-color: #7c3aed;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    body.light-theme .custom-select-trigger:focus, 
+    body.light-theme .custom-select-container.open .custom-select-trigger {
+      background-color: rgba(0, 0, 0, 0.04);
+      border-color: #7c3aed;
+    }
+
+    .custom-select-trigger::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid var(--text-muted);
+      border-bottom: 2px solid var(--text-muted);
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+      margin-right: 4px;
+      margin-top: -3px;
+    }
+
+    .custom-select-container.open .custom-select-trigger::after {
+      transform: rotate(-135deg);
+      margin-top: 3px;
+    }
+
+    .custom-select-options {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: #141416;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      max-height: 240px;
+      overflow-y: auto;
+      z-index: 110;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+    }
+    
+    body.light-theme .custom-select-options {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+    }
+
+    .custom-select-container.open .custom-select-options {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .custom-select-option {
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: background 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .custom-select-option:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    
+    body.light-theme .custom-select-option:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .custom-select-option.selected {
+      background: rgba(124, 58, 237, 0.12);
+      color: #a78bfa;
+      font-weight: 600;
+    }
+    
+    body.light-theme .custom-select-option.selected {
+      background: rgba(124, 58, 237, 0.08);
+      color: #7c3aed;
+    }
+
+    /* Voice Manager advanced styling */
+    .voice-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: all 0.2s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .voice-item-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(124, 58, 237, 0.2);
+    }
+    body.light-theme .voice-item-row {
+      background: rgba(0,0,0,0.02);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    body.light-theme .voice-item-row:hover {
+      background: rgba(0,0,0,0.04);
+      border-color: rgba(124, 58, 237, 0.2);
+    }
+    .voice-action-btn:hover {
+      color: #a78bfa !important;
+    }
+    body.light-theme .voice-action-btn:hover {
+      color: #7c3aed !important;
+    }
+    
+    /* Custom scrollbar and sort buttons for voice list */
+    #voice-list-container {
+      padding-right: 4px;
+    }
+    #voice-list-container::-webkit-scrollbar {
+      width: 5px;
+    }
+    #voice-list-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #voice-list-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    #voice-list-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    body.light-theme #voice-list-container::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    body.light-theme #voice-list-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .voice-sort-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 1px 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      transition: all 0.15s;
+    }
+    .voice-sort-btn:hover:not([disabled]) {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+    body.light-theme .voice-sort-btn:hover:not([disabled]) {
+      background: rgba(0, 0, 0, 0.05);
+      color: #7c3aed;
+    }
+    
+    .translation-line {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      opacity: 0.8;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      font-style: italic;
+      border-left: 2px solid rgba(124, 58, 237, 0.3);
+      padding-left: 8px;
+    }
+    body.light-theme .translation-line {
+      color: #555;
+      border-left: 2px solid rgba(124, 58, 237, 0.5);
+    }
+
+    /* Switch toggle styling */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    body.light-theme .switch-container {
+      background-color: rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .switch-container:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    body.light-theme .switch-container:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+    .switch-label-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .switch-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .switch-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .switch-toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    body.light-theme .switch-toggle {
+      background: rgba(0, 0, 0, 0.15);
+    }
+    .switch-toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #ffffff;
+      border-radius: 50%;
+      transition: transform 0.3s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    .switch-container.active .switch-toggle {
+      background: var(--bg-bubble-user);
+    }
+    .switch-container.active .switch-toggle::after {
+      transform: translateX(20px);
+    }
+
+    /* Help Modal and Table styling */
+    .help-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+    .help-table th, .help-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .help-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+    .help-table tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    body.light-theme .help-table tr:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-cheap {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .badge-mid {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .badge-expensive {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    .badge-reasoning {
+      background: rgba(124, 58, 237, 0.1);
+      color: #a78bfa;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    body.light-theme .badge-reasoning {
+      color: #7c3aed;
+    }
+    .badge-flagship {
+      background: rgba(34, 211, 238, 0.1);
+      color: #22d3ee;
+      border: 1px solid rgba(34, 211, 238, 0.2);
+    }
+    body.light-theme .badge-flagship {
+      color: #0891b2;
+    }
+    .sidebar-footer {
+      padding: 16px 14px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(10, 10, 12, 0.5);
+    }
+    body.light-theme .sidebar-footer {
+      background: rgba(240, 242, 245, 0.5);
+    }
+    .sidebar-action-btn {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-muted);
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .sidebar-action-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border-color: rgba(124, 58, 237, 0.4);
+    }
+    body.light-theme .sidebar-action-btn {
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      color: #555;
+    }
+    body.light-theme .sidebar-action-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1f2937;
+      border-color: rgba(124, 58, 237, 0.4);
+    }
+    .custom-select-group-header {
+      padding: 8px 12px 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.7;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      margin-top: 4px;
+      user-select: none;
+      pointer-events: none;
+    }
+    .custom-select-group-header:first-child {
+      border-top: none;
+      margin-top: 0;
+    }
+    body.light-theme .custom-select-group-header {
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    .table-group-row td {
+      background: rgba(255, 255, 255, 0.02) !important;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #a78bfa;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 10px;
+    }
+    body.light-theme .table-group-row td {
+      background: rgba(0, 0, 0, 0.02) !important;
+      color: #7c3aed;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Left Sidebar for Chat History -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <button class="new-chat-btn" onclick="createNewSession()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          新建对话
+        </button>
+      </div>
+      <div class="sessions-list" id="sessions-list">
+        <!-- Sessions populated by JS -->
+      </div>
+      <div class="sidebar-footer">
+        <button class="sidebar-action-btn" onclick="openHelpModal()" title="模型资费与功能指南">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          使用指南
+        </button>
+        <button class="sidebar-action-btn" onclick="openModal()" title="设置 API Key">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          系统设置
+        </button>
+      </div>
+    </aside>
+
+    <!-- Sidebar backdrop overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Top Navigation Header -->
+      <header>
+        <div class="brand">
+          <button class="icon-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" style="display: none; margin-right: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="brand-icon"></div>
+          <div class="brand-title">AI语音助手</div>
+        </div>
+        
+        <div class="header-actions">
+          <!-- Toggle View Mode (Chat list vs Nebula Orb) -->
+          <button class="icon-btn" id="mode-toggle-btn" onclick="toggleViewMode()" title="切换对话/星云模式">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0"></path>
+            </svg>
+          </button>
+
+          <!-- Voice Playback Mute Toggle -->
+          <button class="icon-btn" id="voice-toggle" title="开启/关闭语音播放" onclick="toggleMute()">
+            <svg id="speaker-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Error or warning toast banner -->
+      <div class="status-toast" id="toast-banner">错误信息将在此处提示</div>
+
+      <!-- Messages Chat Window -->
+      <main id="chat-window">
+        <div class="message-row ai">
+          <div class="bubble">
+            <p>👋 你好！我是你的专属智能语音助手。</p>
+            <p>我已经通过 Web 端加载了您的定制语音服务。在开始前，请点击左下角侧边栏的 **“系统设置”** 按钮配置您的 API Key。</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- Immersive Sphere Mode Window -->
+      <div class="orb-wrapper" id="orb-wrapper">
+        <!-- HUD Corner Brackets -->
+        <div class="hud-corner top-left"></div>
+        <div class="hud-corner top-right"></div>
+        <div class="hud-corner bottom-left"></div>
+        <div class="hud-corner bottom-right"></div>
+
+        <!-- Monospace Technical Status Bar -->
+        <div class="orb-tech-header" id="orb-tech-header">
+          <div class="tech-header-left">
+            <div>voice.synth · v0.1.3</div>
+            <div>analyser · fft 1024</div>
+          </div>
+          <div class="tech-header-right">
+            <div>model · <span id="tech-model-val">deepseek-chat</span></div>
+            <div>codec · mp3 · 44.1khz</div>
+          </div>
+        </div>
+
+        <!-- Orbiting rings container -->
+        <div class="orb-visualizer-container">
+          <div class="orb-ring ring-1" id="orb-ring-1"></div>
+          <div class="orb-ring ring-2" id="orb-ring-2"></div>
+          <div class="orb-ring ring-3" id="orb-ring-3"></div>
+          <div class="orb-ring ring-4" id="orb-ring-4"></div>
+          
+          <!-- The Central Voice Orb -->
+          <div class="voice-orb" id="voice-orb">
+            <div class="orb-inner-core"></div>
+            <div class="orb-particle orb-p1"></div>
+            <div class="orb-particle orb-p2"></div>
+          </div>
+        </div>
+        
+        <div class="orb-subtitle-container">
+          <p id="orb-subtitle"></p>
+        </div>
+
+        <!-- Bottom Telemetry/Status Bar -->
+        <div class="orb-tech-footer">
+          <span class="status-dot" id="tech-status-dot"></span>
+          <span id="tech-clock">00:00:00</span>
+          <span class="separator">·</span>
+          <span id="tech-duration">00:00 / 00:00</span>
+          <span class="separator">·</span>
+          <span id="tech-status-text">idle</span>
+        </div>
+      </div>
+
+      <!-- Chat Input Bar -->
+      <div class="input-bar">
+        <div class="input-box-container">
+          <textarea class="chat-input" id="chat-input" placeholder="输入消息，或点击麦克风说话..." rows="1" onkeydown="handleEnter(event)" oninput="autoResizeTextarea(this)"></textarea>
+          
+          <div class="input-actions-row">
+            <div class="actions-left">
+              <div class="custom-select-container" id="chat-model-dropdown" style="width: auto; min-width: 140px;">
+                <button type="button" class="custom-select-trigger" style="padding: 8px 14px; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color);">
+                  <span>DeepSeek Chat</span>
+                </button>
+                <input type="hidden" id="chat-model" value="deepseek-chat">
+                <div class="custom-select-options" style="bottom: calc(100% + 6px); top: auto; max-height: 200px;">
+                  <div class="custom-select-group-header">DeepSeek 系列</div>
+                  <div class="custom-select-option selected" data-value="deepseek-chat">DeepSeek Chat</div>
+                  <div class="custom-select-option" data-value="deepseek-reasoner">DeepSeek Reasoner</div>
+                  
+                  <div class="custom-select-group-header">OpenAI GPT 系列</div>
+                  <div class="custom-select-option" data-value="gpt-4o-mini">GPT-4o Mini</div>
+                  <div class="custom-select-option" data-value="o3-mini">o3-mini</div>
+                  <div class="custom-select-option" data-value="gpt-4o">GPT-4o</div>
+                  
+                  <div class="custom-select-group-header">Anthropic Claude 系列</div>
+                  <div class="custom-select-option" data-value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</div>
+                  <div class="custom-select-option" data-value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</div>
+                  <div class="custom-select-option" data-value="claude-opus-4-0">Claude Opus 4.0</div>
+                  
+                  <div class="custom-select-group-header">Google Gemini 系列</div>
+                  <div class="custom-select-option" data-value="gemini-3.5-flash">Gemini 3.5 Flash</div>
+                  <div class="custom-select-option" data-value="gemini-2.5-pro">Gemini 2.5 Pro</div>
+                  
+                  <div class="custom-select-group-header">xAI Grok 系列</div>
+                  <div class="custom-select-option" data-value="grok-4.20-0309-non-reasoning">Grok 4.2 Fast</div>
+                  <div class="custom-select-option" data-value="grok-4.20-0309-reasoning">Grok 4.2 Reasoning</div>
+                </div>
+              </div>
+            </div>
+            <div class="actions-right">
+              <!-- Speech-to-text Microphone Button -->
+              <button class="mic-btn" id="mic-btn" onclick="toggleSpeechInput()" title="语音输入">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
+              
+              <!-- Send Message Button -->
+              <button class="send-btn" id="send-btn" onclick="sendMessage()" title="发送">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer Help Panel Modal -->
+  <div class="modal-overlay" id="help-modal" onclick="closeHelpModalOnOuterClick(event)">
+    <div class="modal-sheet" style="max-height: 80vh;">
+      <div class="modal-header">
+        <div class="modal-title">🤖 模型资费与功能指南</div>
+        <button class="icon-btn" onclick="closeHelpModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div style="overflow-x: auto; margin-bottom: 20px;">
+        <table class="help-table">
+          <thead>
+            <tr>
+              <th>模型名称</th>
+              <th>分类</th>
+              <th>消耗评级</th>
+              <th>功能与特长</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- DeepSeek 系列 -->
+            <tr class="table-group-row">
+              <td colspan="4">DeepSeek 系列模型</td>
+            </tr>
+            <tr>
+              <td><strong>DeepSeek Chat</strong></td>
+              <td><span class="badge badge-cheap">性价比推荐</span></td>
+              <td><span class="badge badge-cheap">极低 (约0.007元/万字)</span></td>
+              <td>中文对话、日常问答、长文润色与快速翻译，价格超划算，国内首选。</td>
+            </tr>
+            <tr>
+              <td><strong>DeepSeek Reasoner</strong></td>
+              <td><span class="badge badge-reasoning">深度推理 (R1)</span></td>
+              <td><span class="badge badge-cheap">极低 (约0.04元/万字)</span></td>
+              <td>DeepSeek-R1 推理模型，解决数理逻辑、复杂编码与长考难题，带思维链。</td>
+            </tr>
+            
+            <!-- OpenAI GPT 系列 -->
+            <tr class="table-group-row">
+              <td colspan="4">OpenAI GPT 系列模型</td>
+            </tr>
+            <tr>
+              <td><strong>GPT-4o Mini</strong></td>
+              <td><span class="badge badge-cheap">性价比推荐</span></td>
+              <td><span class="badge badge-cheap">极低 (约0.01元/万字)</span></td>
+              <td>OpenAI 官方最轻量且实惠的模型。速度极快，适合日常快捷聊天和纠错。</td>
+            </tr>
+            <tr>
+              <td><strong>o3-mini</strong></td>
+              <td><span class="badge badge-reasoning">深度推理</span></td>
+              <td><span class="badge badge-mid">中等 (约0.1元/万字)</span></td>
+              <td>OpenAI 极速推理模型，支持推理思考。擅长理科推导与高难度代码重构。</td>
+            </tr>
+            <tr>
+              <td><strong>GPT-4o</strong></td>
+              <td><span class="badge badge-flagship">旗舰主力</span></td>
+              <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+              <td>OpenAI 全能王牌旗舰，综合推理、中英双语、各行业任务处理高度均衡稳定。</td>
+            </tr>
+            
+            <!-- Anthropic Claude 系列 -->
+            <tr class="table-group-row">
+              <td colspan="4">Anthropic Claude 系列模型</td>
+            </tr>
+            <tr>
+              <td><strong>Claude 3.5 Haiku</strong></td>
+              <td><span class="badge badge-cheap">性价比推荐</span></td>
+              <td><span class="badge badge-mid">中等 (约0.07元/万字)</span></td>
+              <td>Anthropic 极速模型。擅长精细格式输出与高水平翻译，比 Sonnet 省钱。</td>
+            </tr>
+            <tr>
+              <td><strong>Claude 3.7 Sonnet</strong></td>
+              <td><span class="badge badge-flagship">旗舰主力</span></td>
+              <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+              <td>当前综合实力天花板。代码编写、深度分析和文学写作极佳，可选思维链。</td>
+            </tr>
+            <tr>
+              <td><strong>Claude Opus 4.0</strong></td>
+              <td><span class="badge badge-flagship">旗舰主力</span></td>
+              <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+              <td>中转特供重制版，回复逻辑极强，擅长高度复杂的学术分析及决策建议。</td>
+            </tr>
+            
+            <!-- Google Gemini 系列 -->
+            <tr class="table-group-row">
+              <td colspan="4">Google Gemini 系列模型</td>
+            </tr>
+            <tr>
+              <td><strong>Gemini 3.5 Flash</strong></td>
+              <td><span class="badge badge-cheap">性价比推荐</span></td>
+              <td><span class="badge badge-cheap">极低 (约0.005元/万字)</span></td>
+              <td>Google 最新一代超快速且极低成本模型，长文本处理和多模态交互好。</td>
+            </tr>
+            <tr>
+              <td><strong>Gemini 2.5 Pro</strong></td>
+              <td><span class="badge badge-flagship">旗舰主力</span></td>
+              <td><span class="badge badge-mid">中等 (约0.15元/万字)</span></td>
+              <td>Google 经典高智商专业模型。极长上下文语义提取和长文档分析能力极佳。</td>
+            </tr>
+            
+            <!-- xAI Grok 系列 -->
+            <tr class="table-group-row">
+              <td colspan="4">xAI Grok 系列模型</td>
+            </tr>
+            <tr>
+              <td><strong>Grok 4.2 Fast</strong></td>
+              <td><span class="badge badge-flagship">旗舰主力</span></td>
+              <td><span class="badge badge-mid">中等 (约0.08元/万字)</span></td>
+              <td>xAI 最新极速版旗舰，包含实时网络搜索，性格直爽率真，回复效率高。</td>
+            </tr>
+            <tr>
+              <td><strong>Grok 4.2 Reasoning</strong></td>
+              <td><span class="badge badge-reasoning">深度推理</span></td>
+              <td><span class="badge badge-expensive">偏高 (约0.3元/万字)</span></td>
+              <td>xAI 深度推理旗舰，专门解决数理逻辑攻坚，思考推导十分严密。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer Settings Panel Modal -->
+  <div class="modal-overlay" id="settings-modal" onclick="closeModalOnOuterClick(event)">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">服务参数配置</div>
+        <button class="icon-btn" onclick="closeModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- 第一部分：基本设置 -->
+      <div style="margin-bottom: 24px;">
+        <!-- Theme Selection -->
+        <div class="form-group">
+          <label class="form-label">界面主题</label>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="theme-select-btn active" id="theme-dark-btn" onclick="setTheme('dark')">
+              🌙 深色模式
+            </button>
+            <button type="button" class="theme-select-btn" id="theme-light-btn" onclick="setTheme('light')">
+              ☀️ 浅色模式
+            </button>
+          </div>
+        </div>
+
+        <!-- ElevenLabs TTS Model Selector -->
+        <div class="form-group">
+          <label class="form-label">ELEVENLABS 语音模型</label>
+          <div class="custom-select-container" id="elevenlabs-model-dropdown">
+            <button type="button" class="custom-select-trigger">
+              <span>Multilingual v2 (高质量多语言 - 推荐)</span>
+            </button>
+            <input type="hidden" id="elevenlabs-model" value="eleven_multilingual_v2">
+            <div class="custom-select-options">
+              <div class="custom-select-option selected" data-value="eleven_multilingual_v2">Multilingual v2 (高质量多语言 - 推荐)</div>
+              <div class="custom-select-option" data-value="eleven_turbo_v2_5">Turbo v2.5 (极速低延迟多语言)</div>
+              <div class="custom-select-option" data-value="eleven_flash_v1">Flash v1 (最快低成本多语言)</div>
+              <div class="custom-select-option" data-value="eleven_monolingual_v1">Monolingual v1 (经典英文单语)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Response Language Selection Dropdown -->
+        <div class="form-group">
+          <label class="form-label">设置回答语言</label>
+          <div class="custom-select-container" id="response-language-dropdown">
+            <button type="button" class="custom-select-trigger">
+              <span>自动 (跟随您所说语言)</span>
+            </button>
+            <input type="hidden" id="response-language" value="auto">
+            <div class="custom-select-options">
+              <div class="custom-select-option selected" data-value="auto">自动 (跟随您所说语言)</div>
+              <div class="custom-select-option" data-value="Chinese">简体中文 (Chinese)</div>
+              <div class="custom-select-option" data-value="English">英文 (English)</div>
+              <div class="custom-select-option" data-value="Japanese">日文 (Japanese)</div>
+              <div class="custom-select-option" data-value="Korean">韩文 (Korean)</div>
+              <div class="custom-select-option" data-value="French">法语 (French)</div>
+              <div class="custom-select-option" data-value="German">德语 (German)</div>
+              <div class="custom-select-option" data-value="Spanish">西班牙语 (Spanish)</div>
+              <div class="custom-select-option" data-value="Italian">意大利语 (Italian)</div>
+              <div class="custom-select-option" data-value="Russian">俄语 (Russian)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Translation Enable Selection -->
+        <div class="form-group">
+          <label class="form-label">文字翻译设置</label>
+          <div class="switch-container" id="translate-enable-switch" onclick="toggleTranslationSwitch()">
+            <div class="switch-label-group">
+              <span class="switch-title">开启文字翻译</span>
+              <span class="switch-desc">在回答下方额外输出一份不会读出来的翻译</span>
+            </div>
+            <div class="switch-toggle"></div>
+            <input type="hidden" id="translate-enable" value="false">
+          </div>
+        </div>
+
+        <!-- Translation Target Language Selection Dropdown -->
+        <div class="form-group" id="translate-target-wrapper" style="display: none;">
+          <label class="form-label">翻译目标语言</label>
+          <div class="custom-select-container" id="translate-target-dropdown">
+            <button type="button" class="custom-select-trigger">
+              <span>简体中文 (Chinese)</span>
+            </button>
+            <input type="hidden" id="translate-target" value="Chinese">
+            <div class="custom-select-options">
+              <div class="custom-select-option selected" data-value="Chinese">简体中文 (Chinese)</div>
+              <div class="custom-select-option" data-value="English">英文 (English)</div>
+              <div class="custom-select-option" data-value="Japanese">日文 (Japanese)</div>
+              <div class="custom-select-option" data-value="Korean">韩文 (Korean)</div>
+              <div class="custom-select-option" data-value="French">法语 (French)</div>
+              <div class="custom-select-option" data-value="German">德语 (German)</div>
+              <div class="custom-select-option" data-value="Spanish">西班牙语 (Spanish)</div>
+              <div class="custom-select-option" data-value="Italian">意大利语 (Italian)</div>
+              <div class="custom-select-option" data-value="Russian">俄语 (Russian)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Voice Selection -->
+        <div class="form-group">
+          <label class="form-label">选择语音声音</label>
+          <div class="custom-select-container" id="voice-select-dropdown">
+            <button type="button" class="custom-select-trigger">
+              <span>正在加载声音...</span>
+            </button>
+            <input type="hidden" id="voice-select" value="">
+            <div class="custom-select-options" id="voice-select-options">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Voice Management Area -->
+        <div class="voice-management-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 18px;">
+          <label class="form-label" style="margin-bottom: 8px;">声音库管理</label>
+          
+          <!-- List of current voices -->
+          <div id="voice-list-container" style="max-height: 180px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <!-- Items populated by JS -->
+          </div>
+          
+          <!-- Add voice form -->
+          <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" class="form-input" id="new-voice-name" placeholder="声音名称 (例如: Chisaki)" style="flex: 1; padding: 8px 10px; font-size: 0.85rem;">
+              <input type="text" class="form-input" id="new-voice-id" placeholder="Voice ID (ElevenLabs ID)" style="flex: 1.2; padding: 8px 10px; font-size: 0.85rem;">
+            </div>
+            <button type="button" class="save-btn" onclick="addNewVoice()" style="margin-top: 0; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; width: auto; align-self: flex-end;">添加新声音</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第二部分：开发者 API 配置 -->
+      <div style="border-top: 1px dashed var(--border-color); padding-top: 20px; margin-bottom: 24px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; font-family: 'Outfit', sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">开发者 API 配置</div>
+        
+        <div class="form-group">
+          <label class="form-label" for="anthropic-key">ANTHROPIC (CLAUDE) API KEY</label>
+          <input type="password" class="form-input" id="anthropic-key" placeholder="sk-ant-api03-...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="anthropic-base">ANTHROPIC API BASE URL (代理/中转接口地址)</label>
+          <input type="text" class="form-input" id="anthropic-base" placeholder="默认官方: https://api.anthropic.com">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="elevenlabs-key">ELEVENLABS API KEY</label>
+          <input type="password" class="form-input" id="elevenlabs-key" placeholder="填入您的 ElevenLabs Key">
+        </div>
+      </div>
+      
+      <button class="save-btn" onclick="saveSettings()">保存并关闭</button>
+    </div>
+  </div>
+
+  <!-- Javascript Logic -->
+  <script>
+    // Globals
+    let chatHistory = [];
+    let isMuted = false;
+    let currentAudio = null;
+    let recognition = null;
+    let isRecording = false;
+    let voicesList = [];
+    let currentTheme = 'dark';
+    let currentViewMode = 'chat';
+    
+    // Sessions Globals
+    let sessions = [];
+    let activeSessionId = null;
+    
+    // Web Audio API Globals
+    let audioCtx = null;
+    let analyserNode = null;
+    let sourceNode = null;
+    let animationFrameId = null;
+    let recordingAnimationId = null;
+
+    // Default Voices preset
+    const defaultVoices = [
+      { name: "Chisaki (您的专属声音)", id: "x7tNCivOKFAydss7fglA" }
+    ];
+
+    // Load configurations on initialization
+    window.onload = function() {
+      // Load values from localStorage
+      document.getElementById('anthropic-key').value = localStorage.getItem('anthropic_key') || '';
+      document.getElementById('anthropic-base').value = localStorage.getItem('anthropic_base') || 'https://api.anthropic.com';
+      document.getElementById('elevenlabs-key').value = localStorage.getItem('elevenlabs_key') || '';
+      
+      const savedModel = localStorage.getItem('chat_model') || 'deepseek-chat';
+      setCustomSelectValue('chat-model-dropdown', savedModel);
+      onModelChange(); // Initialize top HUD model name display
+
+      const savedLang = localStorage.getItem('response_language') || 'auto';
+      setCustomSelectValue('response-language-dropdown', savedLang);
+
+      const savedElevenLabsModel = localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2';
+      setCustomSelectValue('elevenlabs-model-dropdown', savedElevenLabsModel);
+      
+      const savedTransEnable = localStorage.getItem('translate_enable') === 'true';
+      const savedTransTarget = localStorage.getItem('translate_target') || 'Chinese';
+      
+      const transSwitch = document.getElementById('translate-enable-switch');
+      const transInput = document.getElementById('translate-enable');
+      if (transSwitch && transInput) {
+        transInput.value = savedTransEnable ? 'true' : 'false';
+        if (savedTransEnable) {
+          transSwitch.classList.add('active');
+        } else {
+          transSwitch.classList.remove('active');
+        }
+      }
+      setCustomSelectValue('translate-target-dropdown', savedTransTarget);
+      
+      const transTargetWrapper = document.getElementById('translate-target-wrapper');
+      if (transTargetWrapper) {
+        transTargetWrapper.style.display = savedTransEnable ? 'block' : 'none';
+      }
+      
+      // Load sessions and chat history
+      initSessions();
+
+      // Load custom voice list
+      loadVoicesList();
+      
+      // Load theme preference
+      const savedTheme = localStorage.getItem('ui_theme') || 'dark';
+      setTheme(savedTheme);
+
+      isMuted = localStorage.getItem('is_muted') === 'true';
+      updateMuteUI();
+
+      // Start Clock Timer
+      setInterval(() => {
+        const now = new Date();
+        const clockEl = document.getElementById('tech-clock');
+        if (clockEl) {
+          clockEl.innerText = now.toTimeString().split(' ')[0];
+        }
+      }, 1000);
+      
+      // Run once immediately
+      const now = new Date();
+      const clockEl = document.getElementById('tech-clock');
+      if (clockEl) clockEl.innerText = now.toTimeString().split(' ')[0];
+
+      // Check if API keys are set, if not pop up the settings modal automatically
+      if (!localStorage.getItem('anthropic_key') || !localStorage.getItem('elevenlabs_key')) {
+        setTimeout(openModal, 800);
+      }
+
+      // Initialize all custom selects
+      initCustomSelect('chat-model-dropdown', (val) => {
+        onModelChange();
+      });
+      initCustomSelect('elevenlabs-model-dropdown');
+      initCustomSelect('response-language-dropdown');
+      initCustomSelect('voice-select-dropdown');
+      
+      initCustomSelect('translate-target-dropdown');
+      
+      // Global click handler to close custom selects
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select-container').forEach(c => {
+          c.classList.remove('open');
+        });
+      });
+
+      // Initialize Web Speech API for voice recognition
+      initSpeechRecognition();
+    };
+
+    // Session Management Functions
+    function initSessions() {
+      const saved = localStorage.getItem('chat_sessions');
+      const savedActiveId = localStorage.getItem('active_session_id');
+      
+      if (saved) {
+        try {
+          sessions = JSON.parse(saved);
+        } catch (e) {
+          sessions = [];
+        }
+      }
+      
+      if (sessions.length === 0) {
+        createNewSession(true);
+      } else {
+        activeSessionId = savedActiveId || sessions[0].id;
+        if (!sessions.some(s => s.id === activeSessionId)) {
+          activeSessionId = sessions[0].id;
+        }
+        loadSession(activeSessionId);
+      }
+      renderSessionsList();
+    }
+
+    function saveSessions() {
+      const activeSession = sessions.find(s => s.id === activeSessionId);
+      if (activeSession) {
+        activeSession.messages = [...chatHistory];
+      }
+      localStorage.setItem('chat_sessions', JSON.stringify(sessions));
+      localStorage.setItem('active_session_id', activeSessionId);
+    }
+
+    function renderSessionsList() {
+      const listEl = document.getElementById('sessions-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      
+      sessions.forEach(s => {
+        const item = document.createElement('div');
+        item.className = `session-item ${s.id === activeSessionId ? 'active' : ''}`;
+        item.onclick = () => selectSession(s.id);
+        
+        const titleWrapper = document.createElement('div');
+        titleWrapper.className = 'session-title-wrapper';
+        titleWrapper.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="session-title">${escapeHTML(s.title)}</span>
+        `;
+        
+        const actions = document.createElement('div');
+        actions.className = 'session-actions';
+        actions.innerHTML = `
+          <button class="session-action-btn" onclick="renameSession(event, '${s.id}')" title="重命名对话" style="margin-right: 4px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="session-action-btn" onclick="deleteSession(event, '${s.id}')" title="删除对话">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        `;
+        
+        item.appendChild(titleWrapper);
+        item.appendChild(actions);
+        listEl.appendChild(item);
+      });
+    }
+
+    function createNewSession(isInit = false) {
+      if (activeSessionId) {
+        const currentActive = sessions.find(s => s.id === activeSessionId);
+        if (currentActive) {
+          currentActive.messages = [...chatHistory];
+        }
+      }
+
+      const newId = 'session_' + Date.now();
+      const newSession = {
+        id: newId,
+        title: '新对话',
+        messages: []
+      };
+      
+      sessions.unshift(newSession);
+      activeSessionId = newId;
+      chatHistory = [];
+      
+      if (!isInit) {
+        saveSessions();
+        renderSessionsList();
+        clearChatUI();
+        if (window.innerWidth <= 768) {
+          toggleSidebar(false);
+        }
+      }
+    }
+
+    function selectSession(id) {
+      if (id === activeSessionId) return;
+      
+      const currentActive = sessions.find(s => s.id === activeSessionId);
+      if (currentActive) {
+        currentActive.messages = [...chatHistory];
+      }
+      
+      activeSessionId = id;
+      localStorage.setItem('active_session_id', id);
+      
+      if (currentAudio) {
+        currentAudio.pause();
+        stopAllWaveforms();
+      }
+      
+      loadSession(id);
+      renderSessionsList();
+      
+      if (window.innerWidth <= 768) {
+        toggleSidebar(false);
+      }
+    }
+
+    function loadSession(id) {
+      const session = sessions.find(s => s.id === id);
+      if (session) {
+        chatHistory = [...session.messages];
+        renderChatUI();
+      }
+    }
+
+    function deleteSession(e, id) {
+      e.stopPropagation();
+      
+      if (sessions.length <= 1) {
+        sessions = [];
+        createNewSession(false);
+        return;
+      }
+      
+      sessions = sessions.filter(s => s.id !== id);
+      
+      if (activeSessionId === id) {
+        activeSessionId = sessions[0].id;
+        loadSession(activeSessionId);
+      }
+      
+      saveSessions();
+      renderSessionsList();
+      showToast('对话已删除', 1500);
+    }
+
+    function clearChatUI() {
+      const windowEl = document.getElementById('chat-window');
+      windowEl.innerHTML = `
+        <div class="message-row ai">
+          <div class="bubble">
+            <p>👋 你好！我是你的专属智能语音助手。</p>
+            <p>我已经通过 Web 端加载了您的定制语音服务。在开始前，请点击左下角侧边栏的 **“系统设置”** 按钮配置您的 API Key。</p>
+          </div>
+        </div>
+      `;
+      if (currentViewMode === 'orb') {
+        document.getElementById('orb-subtitle').innerText = '';
+      }
+    }
+
+    function renderChatUI() {
+      const windowEl = document.getElementById('chat-window');
+      windowEl.innerHTML = '';
+      
+      if (chatHistory.length === 0) {
+        clearChatUI();
+        return;
+      }
+      
+      chatHistory.forEach(msg => {
+        appendMessage(msg.role === 'assistant' ? 'ai' : 'user', msg.content);
+      });
+      
+      if (currentViewMode === 'orb' && chatHistory.length > 0) {
+        const lastMsg = chatHistory[chatHistory.length - 1];
+        if (lastMsg.role === 'assistant') {
+          document.getElementById('orb-subtitle').innerText = lastMsg.content;
+        }
+      }
+      
+      scrollToBottom();
+    }
+
+    function updateSessionTitleIfNeeded(userMessageText) {
+      const activeSession = sessions.find(s => s.id === activeSessionId);
+      if (activeSession && activeSession.title === '新对话') {
+        const truncated = userMessageText.substring(0, 12) + (userMessageText.length > 12 ? '...' : '');
+        activeSession.title = truncated;
+        saveSessions();
+        renderSessionsList();
+      }
+    }
+
+    function toggleSidebar(forceState = null) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      
+      let isOpen = sidebar.classList.contains('open');
+      if (forceState !== null) {
+        isOpen = !forceState; 
+      }
+      
+      if (isOpen) {
+        sidebar.classList.remove('open');
+        overlay.style.display = 'none';
+      } else {
+        sidebar.classList.add('open');
+        overlay.style.display = 'block';
+      }
+    }
+
+    // Auto resize textarea height
+    function autoResizeTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+
+    function onModelChange() {
+      const model = document.getElementById('chat-model').value;
+      localStorage.setItem('chat_model', model);
+      
+      const techModelVal = document.getElementById('tech-model-val');
+      if (techModelVal) {
+        let cleanModelName = model;
+        if (model.includes('haiku')) cleanModelName = 'claude-haiku-3.5';
+        else if (model.includes('sonnet')) cleanModelName = 'claude-sonnet-3.7';
+        else if (model.includes('opus')) cleanModelName = 'claude-opus-4.0';
+        else if (model.includes('gpt-4o-mini')) cleanModelName = 'gpt-4o-mini';
+        else if (model.includes('gpt-4o')) cleanModelName = 'gpt-4o';
+        else if (model.includes('gpt-4-turbo')) cleanModelName = 'gpt-4-turbo';
+        else if (model.includes('o3-mini')) cleanModelName = 'o3-mini';
+        else if (model.includes('deepseek-chat')) cleanModelName = 'deepseek-chat';
+        else if (model.includes('deepseek-reasoner')) cleanModelName = 'deepseek-reasoner';
+        else if (model.includes('gemini-2.5-pro')) cleanModelName = 'gemini-2.5-pro';
+        else if (model.includes('gemini-3.5-flash')) cleanModelName = 'gemini-3.5-flash';
+        else if (model.includes('grok-4.20-0309-non-reasoning')) cleanModelName = 'grok-4.2-fast';
+        else if (model.includes('grok-4.20-0309-reasoning')) cleanModelName = 'grok-4.2-reason';
+        techModelVal.innerText = cleanModelName;
+      }
+    }
+
+    // Load Voice Library
+    function loadVoicesList() {
+      document.body.classList.remove('dragging-active');
+      const saved = localStorage.getItem('custom_voices');
+      if (saved) {
+        try {
+          voicesList = JSON.parse(saved);
+        } catch (e) {
+          voicesList = [...defaultVoices];
+        }
+      } else {
+        voicesList = [...defaultVoices];
+      }
+      renderVoiceDropdown();
+      renderVoiceManagerList();
+    }
+
+    function renderVoiceDropdown() {
+      const container = document.getElementById('voice-select-options');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      const savedVoice = localStorage.getItem('voice_id') || 'x7tNCivOKFAydss7fglA';
+      const triggerSpan = document.querySelector('#voice-select-dropdown .custom-select-trigger span');
+      const hiddenInput = document.getElementById('voice-select');
+      
+      let matchedVoiceName = "选择语音声音";
+      
+      voicesList.forEach(v => {
+        const item = document.createElement('div');
+        item.className = `custom-select-option ${v.id === savedVoice ? 'selected' : ''}`;
+        item.setAttribute('data-value', v.id);
+        item.innerText = v.name;
+        
+        if (v.id === savedVoice) {
+          matchedVoiceName = v.name;
+          hiddenInput.value = v.id;
+        }
+        
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          hiddenInput.value = v.id;
+          triggerSpan.innerText = v.name;
+          
+          container.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+          item.classList.add('selected');
+          document.getElementById('voice-select-dropdown').classList.remove('open');
+        });
+        
+        container.appendChild(item);
+      });
+      
+      triggerSpan.innerText = matchedVoiceName;
+    }
+
+    function renderVoiceManagerList() {
+      const container = document.getElementById('voice-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      voicesList.forEach((v, index) => {
+        const row = document.createElement('div');
+        row.className = 'voice-item-row';
+        
+        const isFirst = index === 0;
+        const isLast = index === voicesList.length - 1;
+        
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+              <button class="voice-sort-btn" onclick="moveVoice(${index}, -1)" title="上移" ${isFirst ? 'disabled style="opacity: 0.15; cursor: not-allowed;"' : 'style="cursor: pointer;"'}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="display: block;">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </button>
+              <button class="voice-sort-btn" onclick="moveVoice(${index}, 1)" title="下移" ${isLast ? 'disabled style="opacity: 0.15; cursor: not-allowed;"' : 'style="cursor: pointer;"'}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="display: block;">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            </div>
+            
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="voice-name" style="font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(v.name)}</span>
+                <button class="voice-action-btn" onclick="renameVoice(event, '${v.id}')" title="重命名" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px; display: flex; align-items: center;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="voice-id-badge" style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color);">${escapeHTML(v.id)}</span>
+                <button class="voice-action-btn" onclick="copyVoiceId(event, '${v.id}')" title="复制完整ID" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px; display: flex; align-items: center;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button class="delete-voice-btn" onclick="deleteVoice('${v.id}')" style="margin-left: 10px;">删除</button>
+        `;
+        
+        container.appendChild(row);
+      });
+    }
+
+    function moveVoice(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= voicesList.length) return;
+      
+      const temp = voicesList[index];
+      voicesList[index] = voicesList[targetIndex];
+      voicesList[targetIndex] = temp;
+      
+      localStorage.setItem('custom_voices', JSON.stringify(voicesList));
+      loadVoicesList();
+      showToast('声音位置已调整！', 800);
+    }
+
+    function addNewVoice() {
+      const nameInput = document.getElementById('new-voice-name');
+      const idInput = document.getElementById('new-voice-id');
+      const name = nameInput.value.trim();
+      const id = idInput.value.trim();
+      
+      if (!name || !id) {
+        showToast('声音名称和 ID 不能为空', 2000);
+        return;
+      }
+      
+      if (voicesList.some(v => v.id === id)) {
+        showToast('该声音 ID 已经存在', 2000);
+        return;
+      }
+      
+      voicesList.push({ name, id });
+      localStorage.setItem('custom_voices', JSON.stringify(voicesList));
+      
+      nameInput.value = '';
+      idInput.value = '';
+      
+      loadVoicesList();
+      showToast('声音添加成功！', 2000);
+    }
+
+    function deleteVoice(id) {
+      const voice = voicesList.find(v => v.id === id);
+      const voiceName = voice ? voice.name : '';
+      const confirmMsg = voiceName ? `确定要删除声音「${voiceName}」吗？` : '确定要删除该声音吗？';
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+      voicesList = voicesList.filter(v => v.id !== id);
+      localStorage.setItem('custom_voices', JSON.stringify(voicesList));
+      loadVoicesList();
+      showToast('声音已删除', 2000);
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+
+    // Custom select helpers
+    function initCustomSelect(containerId, onChangeCallback) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      const trigger = container.querySelector('.custom-select-trigger');
+      const optionsContainer = container.querySelector('.custom-select-options');
+      const hiddenInput = container.querySelector('input[type="hidden"]');
+      
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Close other custom selects
+        document.querySelectorAll('.custom-select-container').forEach(c => {
+          if (c !== container) c.classList.remove('open');
+        });
+        
+        container.classList.toggle('open');
+      });
+      
+      // We dynamically read options to support dynamic dropdowns like voice-select
+      container.addEventListener('click', (e) => {
+        const option = e.target.closest('.custom-select-option');
+        if (!option) return;
+        
+        e.stopPropagation();
+        const val = option.getAttribute('data-value');
+        const text = option.innerText;
+        
+        trigger.querySelector('span').innerText = text;
+        hiddenInput.value = val;
+        
+        container.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+        
+        container.classList.remove('open');
+        
+        if (onChangeCallback) onChangeCallback(val);
+      });
+    }
+
+    function setCustomSelectValue(containerId, value) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const triggerSpan = container.querySelector('.custom-select-trigger span');
+      const hiddenInput = container.querySelector('input[type="hidden"]');
+      const options = container.querySelectorAll('.custom-select-option');
+      
+      hiddenInput.value = value;
+      
+      let matchedText = "";
+      options.forEach(opt => {
+        if (opt.getAttribute('data-value') === value) {
+          opt.classList.add('selected');
+          matchedText = opt.innerText;
+        } else {
+          opt.classList.remove('selected');
+        }
+      });
+      
+      if (matchedText && triggerSpan) {
+        triggerSpan.innerText = matchedText;
+      }
+    }
+
+    // Copy and rename helpers for Voice Manager
+    function copyVoiceId(e, id) {
+      e.stopPropagation();
+      navigator.clipboard.writeText(id).then(() => {
+        showToast('声音 ID 已复制！', 1500);
+      }).catch(err => {
+        showToast('复制失败：' + err, 1500);
+      });
+    }
+
+    function renameVoice(e, id) {
+      e.stopPropagation();
+      const voice = voicesList.find(v => v.id === id);
+      if (!voice) return;
+      const newName = prompt("请输入声音新名称:", voice.name);
+      if (newName && newName.trim()) {
+        voice.name = newName.trim();
+        localStorage.setItem('custom_voices', JSON.stringify(voicesList));
+        loadVoicesList();
+        showToast('声音重命名成功！', 1500);
+      }
+    }
+
+
+
+    // Theme Switcher
+    function setTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('ui_theme', theme);
+      
+      const darkBtn = document.getElementById('theme-dark-btn');
+      const lightBtn = document.getElementById('theme-light-btn');
+      
+      if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        if (lightBtn) lightBtn.classList.add('active');
+        if (darkBtn) darkBtn.classList.remove('active');
+      } else {
+        document.body.classList.remove('light-theme');
+        if (darkBtn) darkBtn.classList.add('active');
+        if (lightBtn) lightBtn.classList.remove('active');
+      }
+    }
+
+    // Toggle Immersive Sphere / Text Chat view mode
+    function toggleViewMode() {
+      const chatWindow = document.getElementById('chat-window');
+      const orbWrapper = document.getElementById('orb-wrapper');
+      const modeBtn = document.getElementById('mode-toggle-btn');
+      
+      if (currentViewMode === 'chat') {
+        currentViewMode = 'orb';
+        chatWindow.style.display = 'none';
+        orbWrapper.classList.add('active');
+        modeBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        `;
+        startNebulaLoop();
+        if (currentAudio && !currentAudio.paused) {
+          nebulaState = 'speaking';
+        } else if (isRecording) {
+          nebulaState = 'recording';
+        } else {
+          nebulaState = 'idle';
+        }
+        showToast('切换到灵动星云模式', 1500);
+      } else {
+        currentViewMode = 'chat';
+        chatWindow.style.display = 'flex';
+        orbWrapper.classList.remove('active');
+        modeBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0"></path>
+          </svg>
+        `;
+        stopNebulaLoop();
+        showToast('切换到文字对话模式', 1500);
+      }
+    }
+
+    // Modal Control Functions
+    function openModal() {
+      document.getElementById('settings-modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('settings-modal').classList.remove('open');
+    }
+
+    function closeModalOnOuterClick(e) {
+      if (e.target.id === 'settings-modal') {
+        closeModal();
+      }
+    }
+
+    function openHelpModal() {
+      document.getElementById('help-modal').classList.add('open');
+    }
+
+    function closeHelpModal() {
+      document.getElementById('help-modal').classList.remove('open');
+    }
+
+    function closeHelpModalOnOuterClick(e) {
+      if (e.target.id === 'help-modal') {
+        closeHelpModal();
+      }
+    }
+
+    function toggleTranslationSwitch() {
+      const transSwitch = document.getElementById('translate-enable-switch');
+      const transInput = document.getElementById('translate-enable');
+      if (!transSwitch || !transInput) return;
+      
+      const isActive = transSwitch.classList.contains('active');
+      if (isActive) {
+        transSwitch.classList.remove('active');
+        transInput.value = 'false';
+      } else {
+        transSwitch.classList.add('active');
+        transInput.value = 'true';
+      }
+      
+      const transTargetWrapper = document.getElementById('translate-target-wrapper');
+      if (transTargetWrapper) {
+        transTargetWrapper.style.display = transInput.value === 'true' ? 'block' : 'none';
+      }
+    }
+
+    // Save configurations
+    function saveSettings() {
+      const aKey = document.getElementById('anthropic-key').value.trim();
+      const aBase = document.getElementById('anthropic-base').value.trim() || 'https://api.anthropic.com';
+      const eKey = document.getElementById('elevenlabs-key').value.trim();
+      const lang = document.getElementById('response-language').value;
+      const eModel = document.getElementById('elevenlabs-model').value || 'eleven_multilingual_v2';
+      
+      const voiceSelect = document.getElementById('voice-select');
+      const vId = voiceSelect.value || 'x7tNCivOKFAydss7fglA';
+      
+      const transEnable = document.getElementById('translate-enable').value === 'true';
+      const transTarget = document.getElementById('translate-target').value;
+
+      localStorage.setItem('anthropic_key', aKey);
+      localStorage.setItem('anthropic_base', aBase);
+      localStorage.setItem('response_language', lang);
+      localStorage.setItem('elevenlabs_key', eKey);
+      localStorage.setItem('voice_id', vId);
+      localStorage.setItem('elevenlabs_model', eModel);
+      localStorage.setItem('translate_enable', transEnable);
+      localStorage.setItem('translate_target', transTarget);
+      
+      closeModal();
+      showToast('设置保存成功！', 2000);
+    }
+
+    // Toast Alert Notification Banner
+    function showToast(text, duration = 3000) {
+      const banner = document.getElementById('toast-banner');
+      banner.innerText = text;
+      banner.classList.add('show');
+      setTimeout(() => {
+        banner.classList.remove('show');
+      }, duration);
+    }
+
+    // Toggle mute state
+    function toggleMute() {
+      isMuted = !isMuted;
+      localStorage.setItem('is_muted', isMuted);
+      updateMuteUI();
+      
+      if (isMuted && currentAudio) {
+        currentAudio.pause();
+        stopAllWaveforms();
+      }
+      showToast(isMuted ? '已静音语音播报' : '已开启语音播报', 2000);
+    }
+
+    function updateMuteUI() {
+      const speakerBtn = document.getElementById('voice-toggle');
+      const speakerIcon = document.getElementById('speaker-icon');
+      if (isMuted) {
+        speakerBtn.classList.add('muted');
+        speakerIcon.innerHTML = `
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        `;
+      } else {
+        speakerBtn.classList.remove('muted');
+        speakerIcon.innerHTML = `
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        `;
+      }
+    }
+
+    // Web Speech API Voice-to-Text Input
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.log('此浏览器不支持 Web Speech API，无法进行语音转文字输入');
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.lang = 'zh-CN';
+      recognition.interimResults = false;
+
+      recognition.onstart = function() {
+        isRecording = true;
+        document.getElementById('mic-btn').classList.add('recording');
+        document.getElementById('chat-input').placeholder = '正在听你说话...';
+        
+        updateTechStatus('recording');
+
+        document.getElementById('orb-subtitle').innerText = '正在听你说话...';
+        startRecordingOrbAnimation();
+      };
+
+      recognition.onerror = function(e) {
+        console.error('Speech recognition error', e);
+        stopRecordingUI();
+        showToast('语音识别出错，请重试', 2000);
+      };
+
+      recognition.onend = function() {
+        stopRecordingUI();
+        stopRecordingOrbAnimation();
+      };
+
+      recognition.onresult = function(e) {
+        const transcript = e.results[0][0].transcript;
+        document.getElementById('chat-input').value = transcript;
+        
+        const inputEl = document.getElementById('chat-input');
+        autoResizeTextarea(inputEl);
+
+        if (currentViewMode === 'orb' && transcript.trim()) {
+          sendMessage();
+        }
+      };
+    }
+
+    function stopRecordingUI() {
+      isRecording = false;
+      document.getElementById('mic-btn').classList.remove('recording');
+      document.getElementById('chat-input').placeholder = '输入消息，或点击麦克风说话...';
+      updateTechStatus('idle');
+      if (currentViewMode === 'orb') {
+        document.getElementById('orb-subtitle').innerText = '';
+      }
+    }
+
+    function toggleSpeechInput() {
+      if (!recognition) {
+        showToast('当前浏览器或系统不支持语音识别输入', 3000);
+        return;
+      }
+
+      if (isRecording) {
+        recognition.stop();
+      } else {
+        if (currentAudio) {
+          currentAudio.pause();
+          stopAllWaveforms();
+        }
+        recognition.start();
+      }
+    }
+
+    // Chat Functions
+    function handleEnter(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    async function sendMessage() {
+      const inputEl = document.getElementById('chat-input');
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      const aKey = localStorage.getItem('anthropic_key');
+      const aBase = localStorage.getItem('anthropic_base') || 'https://api.anthropic.com';
+      const model = document.getElementById('chat-model').value || 'claude-3-5-haiku-20241022';
+      const eKey = localStorage.getItem('elevenlabs_key');
+      const vId = localStorage.getItem('voice_id') || 'x7tNCivOKFAydss7fglA';
+      const responseLang = localStorage.getItem('response_language') || 'auto';
+      const eModel = localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2';
+      
+      const transEnable = localStorage.getItem('translate_enable') === 'true';
+      const transTarget = localStorage.getItem('translate_target') || 'Chinese';
+
+      if (!aKey || !eKey) {
+        openModal();
+        showToast('请先配置您的 API Key！', 3000);
+        return;
+      }
+
+      appendMessage('user', text);
+      inputEl.value = '';
+      inputEl.style.height = 'auto'; 
+
+      chatHistory.push({ role: 'user', content: text });
+      updateSessionTitleIfNeeded(text);
+      saveSessions();
+
+      if (currentViewMode === 'orb') {
+        updateTechStatus('thinking');
+        startThinkingAnimation();
+        typewriteSubtitle('Thinking...');
+      }
+
+      const aiMessageId = 'ai-msg-' + Date.now();
+      appendMessage('ai', 'Thinking...', aiMessageId);
+
+      scrollToBottom();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: text,
+            history: chatHistory.slice(0, -1).slice(-10), 
+            model: model,
+            anthropic_key: aKey,
+            anthropic_base: aBase,
+            elevenlabs_key: eKey,
+            voice_id: vId,
+            response_language: responseLang,
+            elevenlabs_model: eModel,
+            translate_enabled: transEnable,
+            translate_target: transTarget
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || '接口请求失败');
+        }
+
+        const data = await response.json();
+        
+        updateMessage(aiMessageId, data.text);
+
+        if (currentViewMode === 'orb') {
+          stopThinkingAnimation();
+          typewriteSubtitle(data.text);
+        }
+
+        chatHistory.push({ role: 'assistant', content: data.text });
+        saveSessions();
+
+        if (!isMuted && data.audio) {
+          playSpeech(aiMessageId, data.audio);
+        }
+
+        if (data.error) {
+          console.warn('Speech synthesis warning:', data.error);
+          showToast('语音合成警告：额度不足或配置有误。已降级为纯文本回复。', 4000);
+        }
+
+      } catch (err) {
+        console.error('Request error:', err);
+        const errMsg = `❌ **错误**：${err.message || '请求处理失败。'}`;
+        updateMessage(aiMessageId, errMsg);
+        if (currentViewMode === 'orb') {
+          stopThinkingAnimation();
+          typewriteSubtitle(errMsg);
+        }
+      }
+
+      scrollToBottom();
+    }
+
+    function formatMessageText(text) {
+      if (text === 'Thinking...') {
+        return '<em style="color:var(--text-muted)">思考中...</em>';
+      }
+      if (typeof text !== 'string') return '';
+      // Replace <translation>...</translation> with a styled span
+      let processed = text.replace(/<translation>(.*?)<\/translation>/g, '<span class="translation-line">$1</span>');
+      return marked.parse(processed);
+    }
+
+    // Typewriter Subtitle streaming animation for Immersive Nebula Mode
+    let typewriterTimer = null;
+
+    function typewriteSubtitle(text) {
+      const subtitleEl = document.getElementById('orb-subtitle');
+      if (!subtitleEl) return;
+
+      // Clear any active typewriter timers
+      if (typewriterTimer) {
+        clearTimeout(typewriterTimer);
+        typewriterTimer = null;
+      }
+
+      if (text === 'Thinking...') {
+        subtitleEl.innerHTML = `<em style="color:var(--text-muted)">正在思考中...</em>`;
+        return;
+      }
+
+      if (text.startsWith('❌')) {
+        subtitleEl.innerHTML = `<span style="color:var(--neon-pink)">${text}</span>`;
+        return;
+      }
+
+      // Parse sentences and translations
+      const sentences = parseSentences(text);
+      if (sentences.length === 0) {
+        subtitleEl.innerHTML = '';
+        return;
+      }
+
+      let currentSentenceIndex = 0;
+      let currentCharIndex = 0;
+      let currentTypedText = '';
+
+      function typeChar() {
+        if (currentSentenceIndex >= sentences.length) {
+          // Finished typing all sentences
+          subtitleEl.innerHTML = renderSubtitleState(sentences, sentences.length, '');
+          typewriterTimer = null;
+          return;
+        }
+
+        const currentSentence = sentences[currentSentenceIndex];
+        const sentenceText = currentSentence.text;
+
+        if (currentCharIndex < sentenceText.length) {
+          const char = sentenceText[currentCharIndex];
+          currentTypedText += char;
+          currentCharIndex++;
+
+          // Update subtitle UI
+          subtitleEl.innerHTML = renderSubtitleState(sentences, currentSentenceIndex, currentTypedText);
+
+          // Calculate delay based on character type for natural flow
+          const isAlpha = /[a-zA-Z]/.test(char);
+          const delay = isAlpha ? 25 : 65;
+          typewriterTimer = setTimeout(typeChar, delay);
+        } else {
+          // Current sentence finished typing, move to the next sentence
+          currentSentenceIndex++;
+          currentCharIndex = 0;
+          currentTypedText = '';
+          
+          // Small pause between sentences for natural flow
+          typewriterTimer = setTimeout(typeChar, 400);
+        }
+      }
+
+      // Start the typewriter loop
+      typeChar();
+    }
+
+    function parseSentences(rawText) {
+      const sentences = [];
+      if (rawText.includes('<translation>')) {
+        // Parse sentences with translation tags
+        const regex = /([^<]+)<translation>(.*?)<\/translation>/gi;
+        let match;
+        while ((match = regex.exec(rawText)) !== null) {
+          sentences.push({
+            text: match[1].trim(),
+            translation: match[2].trim()
+          });
+        }
+        // Leftover text
+        const lastIndex = regex.lastIndex;
+        if (lastIndex < rawText.length) {
+          const leftover = rawText.substring(lastIndex).replace(/<\/translation>/g, '').trim();
+          if (leftover) {
+            sentences.push({ text: leftover, translation: '' });
+          }
+        }
+      } else {
+        // No translation tags, split by sentence endings
+        const parts = rawText.split(/(?<=[。！？.!?])\s+/);
+        parts.forEach(part => {
+          if (part.trim()) {
+            sentences.push({
+              text: part.trim(),
+              translation: ''
+            });
+          }
+        });
+      }
+      return sentences;
+    }
+
+    function renderSubtitleState(sentences, currentIndex, currentTypedText) {
+      let html = '';
+      for (let i = 0; i < sentences.length; i++) {
+        const s = sentences[i];
+        if (i < currentIndex) {
+          // Completed sentence with blur and low opacity
+          html += `<span class="completed-sentence">${escapeHTML(s.text)}</span>`;
+          if (s.translation) {
+            html += `<span class="translation-line">${escapeHTML(s.translation)}</span>`;
+          }
+        } else if (i === currentIndex) {
+          // Current active sentence being typed
+          let charsHtml = '';
+          for (let c of currentTypedText) {
+            charsHtml += `<span class="stream-char">${escapeHTML(c)}</span>`;
+          }
+          html += `<span class="current-sentence">${charsHtml}</span>`;
+        } else {
+          // Remaining sentences represented as glowing dots
+          html += ` <span class="glowing-dots"><span>.</span><span>.</span><span>.</span></span>`;
+          break; // Only show one set of dots
+        }
+      }
+      return html;
+    }
+
+    // UI Helper Functions
+    function appendMessage(role, text, id = null) {
+      const chatWindow = document.getElementById('chat-window');
+      const row = document.createElement('div');
+      row.className = `message-row ${role}`;
+      if (id) row.id = id;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      
+      if (role === 'user') {
+        bubble.innerText = text;
+      } else {
+        bubble.innerHTML = formatMessageText(text);
+      }
+
+      row.appendChild(bubble);
+      chatWindow.appendChild(row);
+    }
+
+    function updateMessage(id, text) {
+      const row = document.getElementById(id);
+      if (!row) return;
+      const bubble = row.querySelector('.bubble');
+      if (bubble) {
+        bubble.innerHTML = formatMessageText(text);
+      }
+    }
+
+    // Audio Analysis setup for Orb Mode
+    let activeSpeechMessageId = null;
+
+    function formatTime(secs) {
+      if (isNaN(secs) || secs === Infinity) return '00:00';
+      const m = Math.floor(secs / 60).toString().padStart(2, '0');
+      const s = Math.floor(secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateTechStatus(status) {
+      const statusText = document.getElementById('tech-status-text');
+      const statusDot = document.getElementById('tech-status-dot');
+      if (statusText) statusText.innerText = status;
+      if (statusDot) {
+        statusDot.className = 'status-dot';
+        if (status === 'speaking') {
+          statusDot.classList.add('speaking');
+        } else if (status === 'recording') {
+          statusDot.classList.add('recording');
+        }
+      }
+    }
+
+    function getGlobalAudio() {
+      if (!currentAudio) {
+        currentAudio = new Audio();
+        
+        currentAudio.onplay = function() {
+          if (activeSpeechMessageId) {
+            const row = document.getElementById(activeSpeechMessageId);
+            if (row) {
+              const visualizer = row.querySelector('.waveform-visualizer');
+              const playIcon = row.querySelector('.play-icon');
+              const textLabel = row.querySelector('.bubble-audio-btn span');
+              if (visualizer) visualizer.classList.add('playing');
+              if (playIcon) playIcon.style.display = 'none';
+              if (textLabel) textLabel.innerText = '正在播放语音';
+            }
+          }
+          
+          updateTechStatus('speaking');
+
+          if (currentViewMode === 'orb') {
+            if (audioCtx && audioCtx.state === 'suspended') {
+              audioCtx.resume();
+            }
+            stopThinkingAnimation();
+            startOrbAnimation();
+          }
+        };
+
+        currentAudio.onpause = function() {
+          if (activeSpeechMessageId) {
+            const row = document.getElementById(activeSpeechMessageId);
+            if (row) {
+              const visualizer = row.querySelector('.waveform-visualizer');
+              const playIcon = row.querySelector('.play-icon');
+              const textLabel = row.querySelector('.bubble-audio-btn span');
+              if (visualizer) visualizer.classList.remove('playing');
+              if (playIcon) playIcon.style.display = 'block';
+              if (textLabel) textLabel.innerText = '暂停播放';
+            }
+          }
+          updateTechStatus('idle');
+          stopOrbAnimation();
+          if (currentViewMode === 'orb') {
+            startNebulaLoop();
+          }
+        };
+
+        currentAudio.onended = function() {
+          if (activeSpeechMessageId) {
+            const row = document.getElementById(activeSpeechMessageId);
+            if (row) {
+              const visualizer = row.querySelector('.waveform-visualizer');
+              const playIcon = row.querySelector('.play-icon');
+              const textLabel = row.querySelector('.bubble-audio-btn span');
+              if (visualizer) visualizer.classList.remove('playing');
+              if (playIcon) playIcon.style.display = 'block';
+              if (textLabel) textLabel.innerText = '重新播放';
+            }
+          }
+          updateTechStatus('idle');
+          stopOrbAnimation();
+          if (currentViewMode === 'orb') {
+            startNebulaLoop();
+          }
+        };
+
+        currentAudio.addEventListener('timeupdate', () => {
+          const durationEl = document.getElementById('tech-duration');
+          if (durationEl) {
+            const cur = formatTime(currentAudio.currentTime);
+            const total = formatTime(currentAudio.duration);
+            durationEl.innerText = `${cur} / ${total}`;
+          }
+        });
+        
+        setupAudioAnalysis(currentAudio);
+      }
+      return currentAudio;
+    }
+
+    function setupAudioAnalysis(audioElement) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          analyserNode = audioCtx.createAnalyser();
+          analyserNode.fftSize = 64; 
+        }
+        
+        if (!sourceNode) {
+          sourceNode = audioCtx.createMediaElementSource(audioElement);
+          sourceNode.connect(analyserNode);
+          analyserNode.connect(audioCtx.destination);
+        }
+      } catch (e) {
+        console.warn("Failed to hook AudioContext:", e);
+      }
+    }
+
+    // Orb Mode animations (breathing, speaking, thinking, recording)
+    let idleAnimationId = null;
+    let thinkingAnimationId = null;
+
+    function startNebulaLoop() {
+      // Gentle breathing animation for idle status
+      const orb = document.getElementById('voice-orb');
+      const ring1 = document.getElementById('orb-ring-1');
+      const ring2 = document.getElementById('orb-ring-2');
+      const ring3 = document.getElementById('orb-ring-3');
+      const ring4 = document.getElementById('orb-ring-4');
+      
+      let angle = 0;
+      
+      function animateIdle() {
+        if (currentViewMode !== 'orb' || isRecording || (currentAudio && !currentAudio.paused) || thinkingAnimationId) {
+          idleAnimationId = null;
+          return;
+        }
+        idleAnimationId = requestAnimationFrame(animateIdle);
+        angle += 0.02;
+        const scale = 0.95 + Math.sin(angle) * 0.05; // gentle breathing between 0.9 and 1.0
+        
+        if (orb) {
+          orb.style.transform = `scale(${scale})`;
+          const glowColor = currentTheme === 'light' ? '124, 58, 237' : '249, 115, 22';
+          orb.style.boxShadow = `0 0 ${10 + Math.sin(angle) * 5}px rgba(${glowColor}, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.4)`;
+        }
+      }
+      
+      if (idleAnimationId) cancelAnimationFrame(idleAnimationId);
+      animateIdle();
+    }
+
+    function stopNebulaLoop() {
+      if (idleAnimationId) {
+        cancelAnimationFrame(idleAnimationId);
+        idleAnimationId = null;
+      }
+      resetOrbAndRings();
+    }
+
+    function startOrbAnimation() {
+      if (!analyserNode) return;
+      
+      const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+      const orb = document.getElementById('voice-orb');
+      const ring1 = document.getElementById('orb-ring-1');
+      const ring2 = document.getElementById('orb-ring-2');
+      const ring3 = document.getElementById('orb-ring-3');
+      const ring4 = document.getElementById('orb-ring-4');
+      
+      updateTechStatus('speaking');
+      
+      function draw() {
+        if (currentViewMode !== 'orb' || !currentAudio || currentAudio.paused) {
+          animationFrameId = null;
+          return;
+        }
+        animationFrameId = requestAnimationFrame(draw);
+        analyserNode.getByteFrequencyData(dataArray);
+        
+        let total = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          total += dataArray[i];
+        }
+        const average = total / dataArray.length;
+        
+        let scale = 0.8 + (average / 90); 
+        if (scale > 2.2) scale = 2.2;
+        
+        const borderOpacity = 0.3 + (average / 255) * 0.7;
+        const glowRadius = 15 + (average * 0.4);
+        
+        let color;
+        if (currentTheme === 'light') {
+          // Shift from purple to cyan
+          const r = Math.round(124 - (average * 0.35));
+          const g = Math.round(58 + (average * 0.6));
+          const b = Math.round(237 + (average * 0.0));
+          color = `${r}, ${g}, ${b}`;
+        } else {
+          // Shift from red to indigo
+          const r = Math.round(239 - (average * 0.45));
+          const g = Math.round(68 + (average * 0.15));
+          const b = Math.round(68 + (average * 0.66));
+          color = `${r}, ${g}, ${b}`;
+        }
+        
+        if (orb) {
+          orb.style.transform = `scale(${scale})`;
+          orb.style.borderColor = `rgba(${color}, ${borderOpacity})`;
+          orb.style.boxShadow = `0 0 ${glowRadius}px rgba(${color}, ${borderOpacity * 0.6}), inset 0 0 ${glowRadius * 0.5}px rgba(${color}, ${borderOpacity * 0.4})`;
+        }
+        
+        if (ring1) {
+          ring1.style.transform = `scale(${1 + (average / 150)})`;
+          ring1.style.opacity = 0.15 + (average / 255) * 0.65;
+          ring1.style.borderColor = `rgba(${color}, ${borderOpacity * 0.4})`;
+        }
+        if (ring2) {
+          ring2.style.transform = `scale(${1 + (average / 120)})`;
+          ring2.style.opacity = 0.12 + (average / 255) * 0.58;
+          ring2.style.borderColor = `rgba(${color}, ${borderOpacity * 0.3})`;
+        }
+        if (ring3) {
+          ring3.style.transform = `scale(${1 + (average / 90)})`;
+          ring3.style.opacity = 0.10 + (average / 255) * 0.50;
+          ring3.style.borderColor = `rgba(${color}, ${borderOpacity * 0.2})`;
+        }
+        if (ring4) {
+          ring4.style.transform = `scale(${1 + (average / 60)})`;
+          ring4.style.opacity = 0.08 + (average / 255) * 0.42;
+          ring4.style.borderColor = `rgba(${color}, ${borderOpacity * 0.15})`;
+        }
+      }
+      
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      draw();
+    }
+
+    function stopOrbAnimation() {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      updateTechStatus('idle');
+      resetOrbAndRings();
+    }
+
+    function startRecordingOrbAnimation() {
+      const orb = document.getElementById('voice-orb');
+      const ring1 = document.getElementById('orb-ring-1');
+      const ring2 = document.getElementById('orb-ring-2');
+      const ring3 = document.getElementById('orb-ring-3');
+      const ring4 = document.getElementById('orb-ring-4');
+      
+      let angle = 0;
+      updateTechStatus('recording');
+      
+      function animate() {
+        if (currentViewMode !== 'orb' || !isRecording) {
+          recordingAnimationId = null;
+          return;
+        }
+        recordingAnimationId = requestAnimationFrame(animate);
+        angle += 0.05;
+        const amplitude = Math.sin(angle) * 0.1 + 0.1; // 0 to 0.2
+        const scale = 1.0 + amplitude;
+        
+        if (orb) {
+          orb.style.transform = `scale(${scale})`;
+          const glowColor = currentTheme === 'light' ? '124, 58, 237' : '239, 68, 68';
+          const borderOpacity = 0.4 + amplitude * 2;
+          orb.style.borderColor = `rgba(${glowColor}, ${borderOpacity})`;
+          orb.style.boxShadow = `0 0 ${20 + amplitude * 50}px rgba(${glowColor}, ${borderOpacity * 0.6})`;
+        }
+        
+        if (ring1) ring1.style.transform = `scale(${1 + amplitude * 0.5}) rotate(${angle * 10}deg)`;
+        if (ring2) ring2.style.transform = `scale(${1 + amplitude * 0.8}) rotate(${-angle * 7}deg)`;
+        if (ring3) ring3.style.transform = `scale(${1 + amplitude * 1.1}) rotate(${angle * 5}deg)`;
+        if (ring4) ring4.style.transform = `scale(${1 + amplitude * 1.4}) rotate(${-angle * 3}deg)`;
+      }
+      
+      if (recordingAnimationId) {
+        cancelAnimationFrame(recordingAnimationId);
+      }
+      if (idleAnimationId) {
+        cancelAnimationFrame(idleAnimationId);
+        idleAnimationId = null;
+      }
+      animate();
+    }
+
+    function startThinkingAnimation() {
+      const orb = document.getElementById('voice-orb');
+      let angle = 0;
+      
+      function animateThinking() {
+        if (currentViewMode !== 'orb' || !orb) {
+          thinkingAnimationId = null;
+          return;
+        }
+        thinkingAnimationId = requestAnimationFrame(animateThinking);
+        angle += 0.08;
+        const scale = 0.9 + Math.sin(angle) * 0.05;
+        
+        orb.style.transform = `scale(${scale})`;
+        const glowColor = currentTheme === 'light' ? '124, 58, 237' : '139, 92, 246';
+        orb.style.boxShadow = `0 0 ${15 + Math.sin(angle) * 8}px rgba(${glowColor}, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.4)`;
+      }
+      
+      if (thinkingAnimationId) cancelAnimationFrame(thinkingAnimationId);
+      if (idleAnimationId) {
+        cancelAnimationFrame(idleAnimationId);
+        idleAnimationId = null;
+      }
+      animateThinking();
+    }
+
+    function stopThinkingAnimation() {
+      if (thinkingAnimationId) {
+        cancelAnimationFrame(thinkingAnimationId);
+        thinkingAnimationId = null;
+      }
+    }
+
+    function resetOrbAndRings() {
+      const orb = document.getElementById('voice-orb');
+      const ring1 = document.getElementById('orb-ring-1');
+      const ring2 = document.getElementById('orb-ring-2');
+      const ring3 = document.getElementById('orb-ring-3');
+      const ring4 = document.getElementById('orb-ring-4');
+      
+      if (orb) {
+        orb.style.transform = '';
+        orb.style.borderColor = '';
+        orb.style.boxShadow = '';
+      }
+      if (ring1) ring1.style.transform = '';
+      if (ring2) ring2.style.transform = '';
+      if (ring3) ring3.style.transform = '';
+      if (ring4) ring4.style.transform = '';
+    }
+
+    function renameSession(e, id) {
+      e.stopPropagation();
+      const session = sessions.find(s => s.id === id);
+      if (!session) return;
+      const newTitle = prompt("请输入新的对话名称:", session.title);
+      if (newTitle && newTitle.trim()) {
+        session.title = newTitle.trim();
+        saveSessions();
+        renderSessionsList();
+        showToast('对话重命名成功！', 1500);
+      }
+    }
+
+    function stopRecordingOrbAnimation() {
+      if (recordingAnimationId) {
+        cancelAnimationFrame(recordingAnimationId);
+        recordingAnimationId = null;
+      }
+      resetOrbAndRings();
+      if (currentViewMode === 'orb') {
+        startNebulaLoop();
+      }
+    }
+
+    function playSpeech(messageId, base64Audio) {
+      const audio = getGlobalAudio();
+      
+      if (activeSpeechMessageId === messageId && !audio.paused) {
+        audio.pause();
+        return;
+      }
+      
+      activeSpeechMessageId = messageId;
+      audio.pause();
+      audio.src = base64Audio;
+      
+      stopAllWaveforms();
+      stopOrbAnimation();
+
+      const row = document.getElementById(messageId);
+      const bubble = row ? row.querySelector('.bubble') : null;
+      
+      if (bubble) {
+        let audioBtn = bubble.querySelector('.bubble-audio-btn');
+        if (!audioBtn) {
+          audioBtn = document.createElement('div');
+          audioBtn.className = 'bubble-audio-btn';
+          audioBtn.innerHTML = `
+            <svg class="play-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <div class="waveform-visualizer">
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+            </div>
+            <span>正在播放语音</span>
+          `;
+          bubble.appendChild(audioBtn);
+          
+          audioBtn.onclick = function(e) {
+            e.stopPropagation();
+            playSpeech(messageId, base64Audio);
+          };
+        }
+      }
+
+      audio.play().catch(e => {
+        console.error('Audio playback failed', e);
+        showToast('浏览器自动播放受阻，请点击播放按钮', 3000);
+        stopOrbAnimation();
+        stopAllWaveforms();
+      });
+    }
+
+    function stopAllWaveforms() {
+      document.querySelectorAll('.waveform-visualizer').forEach(el => {
+        el.classList.remove('playing');
+      });
+      document.querySelectorAll('.bubble-audio-btn span').forEach(el => {
+        el.innerText = '重新播放';
+      });
+      document.querySelectorAll('.bubble-audio-btn .play-icon').forEach(el => {
+        el.style.display = 'block';
+      });
+    }
+
+    function scrollToBottom() {
+      const chatWindow = document.getElementById('chat-window');
+      chatWindow.scrollTo({
+        top: chatWindow.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
+  </script>
+</body>
+</html>
