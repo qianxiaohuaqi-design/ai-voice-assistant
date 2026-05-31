@@ -559,16 +559,55 @@
       border-top-left-radius: 28px;
       border-top-right-radius: 28px;
       border-top: 1px solid var(--border-color);
-      padding: 24px 20px 40px;
+      padding: 24px 20px 24px;
       box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
       transform: translateY(100%);
       transition: transform 0.3s cubic-bezier(0.32, 0.94, 0.6, 1);
       max-height: 85vh;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
 
     .modal-overlay.open .modal-sheet {
       transform: translateY(0);
+    }
+
+    .modal-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding-right: 4px;
+      margin-bottom: 8px;
+    }
+
+    .modal-footer {
+      flex-shrink: 0;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background: inherit;
+    }
+
+    body.light-theme .modal-footer {
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Custom Confirm Modal Specific Styles */
+    #confirm-modal {
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #confirm-modal .modal-sheet {
+      max-width: 400px;
+      border-radius: 24px;
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+      max-height: 90vh;
+      display: block;
+    }
+    #confirm-modal.open .modal-sheet {
+      transform: translateY(0) scale(1);
     }
 
     .modal-header {
@@ -1908,97 +1947,118 @@
     <div class="modal-sheet" style="max-height: 80vh;">
       <div class="modal-header">
         <div class="modal-title">🤖 模型资费与功能指南</div>
-        <button class="icon-btn" onclick="closeHelpModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      
-      <div style="overflow-x: auto; margin-bottom: 20px;">
-        <table class="help-table">
-          <thead>
-            <tr>
-              <th>模型名称</th>
-              <th>分类</th>
-              <th>消耗评级</th>
-              <th>功能与特长</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- DeepSeek 系列 -->
-            <tr class="table-group-row">
-              <td colspan="4">DeepSeek 系列模型</td>
-            </tr>
-            <tr>
-              <td><strong>DeepSeek Chat</strong></td>
-              <td><span class="badge badge-cheap">性价比推荐</span></td>
-              <td><span class="badge badge-cheap">极低 (约0.007元/万字)</span></td>
-              <td>中文对话、日常问答、长文润色与快速翻译，价格超划算，国内首选。</td>
-            </tr>
-            <tr>
-              <td><strong>DeepSeek Reasoner</strong></td>
-              <td><span class="badge badge-reasoning">深度推理 (R1)</span></td>
-              <td><span class="badge badge-cheap">极低 (约0.04元/万字)</span></td>
-              <td>DeepSeek-R1 推理模型，解决数理逻辑、复杂编码与长考难题，带思维链。</td>
-            </tr>
-            
-            <!-- OpenAI GPT 系列 -->
-            <tr class="table-group-row">
-              <td colspan="4">OpenAI GPT 系列模型</td>
-            </tr>
-            <tr>
-              <td><strong>GPT-4o Mini</strong></td>
-              <td><span class="badge badge-cheap">性价比推荐</span></td>
-              <td><span class="badge badge-cheap">极低 (约0.01元/万字)</span></td>
-              <td>OpenAI 官方最轻量且实惠的模型。速度极快，适合日常快捷聊天和纠错。</td>
-            </tr>
-            <tr>
-              <td><strong>o3-mini</strong></td>
-              <td><span class="badge badge-reasoning">深度推理</span></td>
-              <td><span class="badge badge-mid">中等 (约0.1元/万字)</span></td>
-              <td>OpenAI 极速推理模型，支持推理思考。擅长理科推导与高难度代码重构。</td>
-            </tr>
-            <tr>
-              <td><strong>GPT-4o</strong></td>
-              <td><span class="badge badge-flagship">旗舰主力</span></td>
-              <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
-              <td>OpenAI 全能王牌旗舰，综合推理、中英双语、各行业任务处理高度均衡稳定。</td>
-            </tr>
-            
-            <!-- Anthropic Claude 系列 -->
-            <tr class="table-group-row">
-              <td colspan="4">Anthropic Claude 系列模型</td>
-            </tr>
-            <tr>
-              <td><strong>Claude 3.5 Haiku</strong></td>
-              <td><span class="badge badge-cheap">性价比推荐</span></td>
-              <td><span class="badge badge-mid">中等 (约0.07元/万字)</span></td>
-              <td>Anthropic 极速模型。擅长精细格式输出与高水平翻译，比 Sonnet 省钱。</td>
-            </tr>
-            <tr>
-              <td><strong>Claude 3.7 Sonnet</strong></td>
-              <td><span class="badge badge-flagship">旗舰主力</span></td>
-              <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
-              <td>当前综合实力天花板。代码编写、深度分析和文学写作极佳，可选思维链。</td>
-            </tr>
-            <tr>
-              <td><strong>Claude Opus 4.0</strong></td>
-              <td><span class="badge badge-flagship">旗舰主力</span></td>
-              <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
-              <td>中转特供重制版，回复逻辑极强，擅长高度复杂的学术分析及决策建议。</td>
-            </tr>
-            
-            <!-- Google Gemini 系列 -->
-            <tr class="table-group-row">
-              <td colspan="4">Google Gemini 系列模型</td>
-            </tr>
-            <tr>
-              <td><strong>Gemini 3.5 Flash</strong></td>
-              <td><span class="badge badge-cheap">性价比推荐</span></td>
-              <td><span class="badge badge-cheap">极低 (约0.005元/万字)</span></td>
-              <td>Google 最新一代超快速且极低成本模型，长文本处理和多模态交互好。</td>
+        <button class="icon-btn      <div class="modal-body">
+        <div style="overflow-x: auto; margin-bottom: 20px;">
+          <table class="help-table">
+            <thead>
+              <tr>
+                <th>模型名称</th>
+                <th>分类</th>
+                <th>消耗评级</th>
+                <th>功能与特长</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- DeepSeek 系列 -->
+              <tr class="table-group-row">
+                <td colspan="4">DeepSeek 系列模型</td>
+              </tr>
+              <tr>
+                <td><strong>DeepSeek Chat</strong></td>
+                <td><span class="badge badge-cheap">性价比推荐</span></td>
+                <td><span class="badge badge-cheap">极低 (约0.007元/万字)</span></td>
+                <td>中文对话、日常问答、长文润色与快速翻译，价格超划算，国内首选。</td>
+              </tr>
+              <tr>
+                <td><strong>DeepSeek Reasoner</strong></td>
+                <td><span class="badge badge-reasoning">深度推理 (R1)</span></td>
+                <td><span class="badge badge-cheap">极低 (约0.04元/万字)</span></td>
+                <td>DeepSeek-R1 推理模型，解决数理逻辑、复杂编码与长考难题，带思维链。</td>
+              </tr>
+              
+              <!-- OpenAI GPT 系列 -->
+              <tr class="table-group-row">
+                <td colspan="4">OpenAI GPT 系列模型</td>
+              </tr>
+              <tr>
+                <td><strong>GPT-4o Mini</strong></td>
+                <td><span class="badge badge-cheap">性价比推荐</span></td>
+                <td><span class="badge badge-cheap">极低 (约0.01元/万字)</span></td>
+                <td>OpenAI 官方最轻量且实惠的模型。速度极快，适合日常快捷聊天和纠错。</td>
+              </tr>
+              <tr>
+                <td><strong>o3-mini</strong></td>
+                <td><span class="badge badge-reasoning">深度推理</span></td>
+                <td><span class="badge badge-mid">中等 (约0.1元/万字)</span></td>
+                <td>OpenAI 极速推理模型，支持推理思考。擅长理科推导与高难度代码重构。</td>
+              </tr>
+              <tr>
+                <td><strong>GPT-4o</strong></td>
+                <td><span class="badge badge-flagship">旗舰主力</span></td>
+                <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+                <td>OpenAI 全能王牌旗舰，综合推理、中英双语、各行业任务处理高度均衡稳定。</td>
+              </tr>
+              
+              <!-- Anthropic Claude 系列 -->
+              <tr class="table-group-row">
+                <td colspan="4">Anthropic Claude 系列模型</td>
+              </tr>
+              <tr>
+                <td><strong>Claude 3.5 Haiku</strong></td>
+                <td><span class="badge badge-cheap">性价比推荐</span></td>
+                <td><span class="badge badge-mid">中等 (约0.07元/万字)</span></td>
+                <td>Anthropic 极速模型。擅长精细格式输出与高水平翻译，比 Sonnet 省钱。</td>
+              </tr>
+              <tr>
+                <td><strong>Claude 3.7 Sonnet</strong></td>
+                <td><span class="badge badge-flagship">旗舰主力</span></td>
+                <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+                <td>当前综合实力天花板。代码编写、深度分析和文学写作极佳，可选思维链。</td>
+              </tr>
+              <tr>
+                <td><strong>Claude Opus 4.0</strong></td>
+                <td><span class="badge badge-flagship">旗舰主力</span></td>
+                <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+                <td>中转特供重制版，回复逻辑极强，擅长高度复杂的学术分析及决策建议。</td>
+              </tr>
+              
+              <!-- Google Gemini 系列 -->
+              <tr class="table-group-row">
+                <td colspan="4">Google Gemini 系列模型</td>
+              </tr>
+              <tr>
+                <td><strong>Gemini 3.5 Flash</strong></td>
+                <td><span class="badge badge-cheap">性价比推荐</span></td>
+                <td><span class="badge badge-cheap">极低 (约0.005元/万字)</span></td>
+                <td>Google 最新一代超快速且极低成本模型，长文本处理和多模态交互好。</td>
+              </tr>
+              <tr>
+                <td><strong>Gemini 2.5 Pro</strong></td>
+                <td><span class="badge badge-flagship">旗舰主力</span></td>
+                <td><span class="badge badge-mid">中等 (约0.15元/万字)</span></td>
+                <td>Google 经典高智商专业模型。极长上下文语义提取和长文档分析能力极佳。</td>
+              </tr>
+              
+              <!-- xAI Grok 系列 -->
+              <tr class="table-group-row">
+                <td colspan="4">xAI Grok 系列模型</td>
+              </tr>
+              <tr>
+                <td><strong>Grok 4.2 Fast</strong></td>
+                <td><span class="badge badge-flagship">旗舰主力</span></td>
+                <td><span class="badge badge-mid">中等 (约0.08元/万字)</span></td>
+                <td>xAI 最新极速版旗舰，包含实时网络搜索，性格直爽率真，回复效率高。</td>
+              </tr>
+              <tr>
+                <td><strong>Grok 4.2 Reasoning</strong></td>
+                <td><span class="badge badge-reasoning">深度推理</span></td>
+                <td><span class="badge badge-expensive">偏高 (约0.3元/万字)</span></td>
+                <td>xAI 深度推理旗舰，专门解决数理逻辑攻坚，思考推导十分严密。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>态交互好。</td>
             </tr>
             <tr>
               <td><strong>Gemini 2.5 Pro</strong></td>
@@ -2042,151 +2102,169 @@
         </button>
       </div>
       
-      <!-- 第一部分：基本设置 -->
-      <div style="margin-bottom: 24px;">
-        <!-- Theme Selection -->
-        <div class="form-group">
-          <label class="form-label">界面主题</label>
-          <div style="display: flex; gap: 10px;">
-            <button type="button" class="theme-select-btn active" id="theme-dark-btn" onclick="setTheme('dark')">
-              深色模式
-            </button>
-            <button type="button" class="theme-select-btn" id="theme-light-btn" onclick="setTheme('light')">
-              浅色模式
-            </button>
+      <div class="modal-body">
+        <!-- 第一部分：基本设置 -->
+        <div style="margin-bottom: 24px;">
+          <!-- Theme Selection -->
+          <div class="form-group">
+            <label class="form-label">界面主题</label>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" class="theme-select-btn active" id="theme-dark-btn" onclick="setTheme('dark')">
+                深色模式
+              </button>
+              <button type="button" class="theme-select-btn" id="theme-light-btn" onclick="setTheme('light')">
+                浅色模式
+              </button>
+            </div>
           </div>
-        </div>
 
-        <!-- ElevenLabs TTS Model Selector -->
-        <div class="form-group">
-          <label class="form-label">ELEVENLABS 语音模型</label>
-          <div class="custom-select-container" id="elevenlabs-model-dropdown">
-            <button type="button" class="custom-select-trigger">
-              <span>Multilingual v2 (高质量多语言 - 推荐)</span>
-            </button>
-            <input type="hidden" id="elevenlabs-model" value="eleven_multilingual_v2">
-            <div class="custom-select-options">
-              <div class="custom-select-option selected" data-value="eleven_multilingual_v2">Multilingual v2 (高质量多语言 - 推荐)</div>
-              <div class="custom-select-option" data-value="eleven_turbo_v2_5">Turbo v2.5 (极速低延迟多语言)</div>
-              <div class="custom-select-option" data-value="eleven_flash_v1">Flash v1 (最快低成本多语言)</div>
-              <div class="custom-select-option" data-value="eleven_monolingual_v1">Monolingual v1 (经典英文单语)</div>
+          <!-- ElevenLabs TTS Model Selector -->
+          <div class="form-group">
+            <label class="form-label">ELEVENLABS 语音模型</label>
+            <div class="custom-select-container" id="elevenlabs-model-dropdown">
+              <button type="button" class="custom-select-trigger">
+                <span>Multilingual v2 (高质量多语言 - 推荐)</span>
+              </button>
+              <input type="hidden" id="elevenlabs-model" value="eleven_multilingual_v2">
+              <div class="custom-select-options">
+                <div class="custom-select-option selected" data-value="eleven_multilingual_v2">Multilingual v2 (高质量多语言 - 推荐)</div>
+                <div class="custom-select-option" data-value="eleven_turbo_v2_5">Turbo v2.5 (极速低延迟多语言)</div>
+                <div class="custom-select-option" data-value="eleven_flash_v1">Flash v1 (最快低成本多语言)</div>
+                <div class="custom-select-option" data-value="eleven_monolingual_v1">Monolingual v1 (经典英文单语)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Response Language Selection Dropdown -->
+          <div class="form-group">
+            <label class="form-label">设置回答语言</label>
+            <div class="custom-select-container" id="response-language-dropdown">
+              <button type="button" class="custom-select-trigger">
+                <span>自动 (跟随您所说语言)</span>
+              </button>
+              <input type="hidden" id="response-language" value="auto">
+              <div class="custom-select-options">
+                <div class="custom-select-option selected" data-value="auto">自动 (跟随您所说语言)</div>
+                <div class="custom-select-option" data-value="Chinese">简体中文 (Chinese)</div>
+                <div class="custom-select-option" data-value="English">英文 (English)</div>
+                <div class="custom-select-option" data-value="Japanese">日文 (Japanese)</div>
+                <div class="custom-select-option" data-value="Korean">韩文 (Korean)</div>
+                <div class="custom-select-option" data-value="French">法语 (French)</div>
+                <div class="custom-select-option" data-value="German">德语 (German)</div>
+                <div class="custom-select-option" data-value="Spanish">西班牙语 (Spanish)</div>
+                <div class="custom-select-option" data-value="Italian">意大利语 (Italian)</div>
+                <div class="custom-select-option" data-value="Russian">俄语 (Russian)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Translation Enable Selection -->
+          <div class="form-group">
+            <label class="form-label">文字翻译设置</label>
+            <div class="switch-container" id="translate-enable-switch" onclick="toggleTranslationSwitch()">
+              <div class="switch-label-group">
+                <span class="switch-title">开启文字翻译</span>
+                <span class="switch-desc">在回答下方额外输出一份不会读出来的翻译</span>
+              </div>
+              <div class="switch-toggle"></div>
+              <input type="hidden" id="translate-enable" value="false">
+            </div>
+          </div>
+
+          <!-- Translation Target Language Selection Dropdown -->
+          <div class="form-group" id="translate-target-wrapper" style="display: none;">
+            <label class="form-label">翻译目标语言</label>
+            <div class="custom-select-container" id="translate-target-dropdown">
+              <button type="button" class="custom-select-trigger">
+                <span>简体中文 (Chinese)</span>
+              </button>
+              <input type="hidden" id="translate-target" value="Chinese">
+              <div class="custom-select-options">
+                <div class="custom-select-option selected" data-value="Chinese">简体中文 (Chinese)</div>
+                <div class="custom-select-option" data-value="English">英文 (English)</div>
+                <div class="custom-select-option" data-value="Japanese">日文 (Japanese)</div>
+                <div class="custom-select-option" data-value="Korean">韩文 (Korean)</div>
+                <div class="custom-select-option" data-value="French">法语 (French)</div>
+                <div class="custom-select-option" data-value="German">德语 (German)</div>
+                <div class="custom-select-option" data-value="Spanish">西班牙语 (Spanish)</div>
+                <div class="custom-select-option" data-value="Italian">意大利语 (Italian)</div>
+                <div class="custom-select-option" data-value="Russian">俄语 (Russian)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Voice Selection -->
+          <div class="form-group">
+            <label class="form-label">选择语音声音</label>
+            <div class="custom-select-container" id="voice-select-dropdown">
+              <button type="button" class="custom-select-trigger">
+                <span>正在加载声音...</span>
+              </button>
+              <input type="hidden" id="voice-select" value="">
+              <div class="custom-select-options" id="voice-select-options">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Voice Management Area -->
+          <div class="voice-management-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 18px;">
+            <label class="form-label" style="margin-bottom: 8px;">声音库管理</label>
+            
+            <!-- List of current voices -->
+            <div id="voice-list-container" style="max-height: 180px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <!-- Items populated by JS -->
+            </div>
+            
+            <!-- Add voice form -->
+            <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+              <div style="display: flex; gap: 8px;">
+                <input type="text" class="form-input" id="new-voice-name" placeholder="声音名称 (例如: Chisaki)" style="flex: 1; padding: 8px 10px; font-size: 0.85rem;">
+                <input type="text" class="form-input" id="new-voice-id" placeholder="Voice ID (ElevenLabs ID)" style="flex: 1.2; padding: 8px 10px; font-size: 0.85rem;">
+              </div>
+              <button type="button" class="save-btn" onclick="addNewVoice()" style="margin-top: 0; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; width: auto; align-self: flex-end;">添加新声音</button>
             </div>
           </div>
         </div>
 
-        <!-- Response Language Selection Dropdown -->
-        <div class="form-group">
-          <label class="form-label">设置回答语言</label>
-          <div class="custom-select-container" id="response-language-dropdown">
-            <button type="button" class="custom-select-trigger">
-              <span>自动 (跟随您所说语言)</span>
-            </button>
-            <input type="hidden" id="response-language" value="auto">
-            <div class="custom-select-options">
-              <div class="custom-select-option selected" data-value="auto">自动 (跟随您所说语言)</div>
-              <div class="custom-select-option" data-value="Chinese">简体中文 (Chinese)</div>
-              <div class="custom-select-option" data-value="English">英文 (English)</div>
-              <div class="custom-select-option" data-value="Japanese">日文 (Japanese)</div>
-              <div class="custom-select-option" data-value="Korean">韩文 (Korean)</div>
-              <div class="custom-select-option" data-value="French">法语 (French)</div>
-              <div class="custom-select-option" data-value="German">德语 (German)</div>
-              <div class="custom-select-option" data-value="Spanish">西班牙语 (Spanish)</div>
-              <div class="custom-select-option" data-value="Italian">意大利语 (Italian)</div>
-              <div class="custom-select-option" data-value="Russian">俄语 (Russian)</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Translation Enable Selection -->
-        <div class="form-group">
-          <label class="form-label">文字翻译设置</label>
-          <div class="switch-container" id="translate-enable-switch" onclick="toggleTranslationSwitch()">
-            <div class="switch-label-group">
-              <span class="switch-title">开启文字翻译</span>
-              <span class="switch-desc">在回答下方额外输出一份不会读出来的翻译</span>
-            </div>
-            <div class="switch-toggle"></div>
-            <input type="hidden" id="translate-enable" value="false">
-          </div>
-        </div>
-
-        <!-- Translation Target Language Selection Dropdown -->
-        <div class="form-group" id="translate-target-wrapper" style="display: none;">
-          <label class="form-label">翻译目标语言</label>
-          <div class="custom-select-container" id="translate-target-dropdown">
-            <button type="button" class="custom-select-trigger">
-              <span>简体中文 (Chinese)</span>
-            </button>
-            <input type="hidden" id="translate-target" value="Chinese">
-            <div class="custom-select-options">
-              <div class="custom-select-option selected" data-value="Chinese">简体中文 (Chinese)</div>
-              <div class="custom-select-option" data-value="English">英文 (English)</div>
-              <div class="custom-select-option" data-value="Japanese">日文 (Japanese)</div>
-              <div class="custom-select-option" data-value="Korean">韩文 (Korean)</div>
-              <div class="custom-select-option" data-value="French">法语 (French)</div>
-              <div class="custom-select-option" data-value="German">德语 (German)</div>
-              <div class="custom-select-option" data-value="Spanish">西班牙语 (Spanish)</div>
-              <div class="custom-select-option" data-value="Italian">意大利语 (Italian)</div>
-              <div class="custom-select-option" data-value="Russian">俄语 (Russian)</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Voice Selection -->
-        <div class="form-group">
-          <label class="form-label">选择语音声音</label>
-          <div class="custom-select-container" id="voice-select-dropdown">
-            <button type="button" class="custom-select-trigger">
-              <span>正在加载声音...</span>
-            </button>
-            <input type="hidden" id="voice-select" value="">
-            <div class="custom-select-options" id="voice-select-options">
-              <!-- Populated by JS -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Voice Management Area -->
-        <div class="voice-management-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 18px;">
-          <label class="form-label" style="margin-bottom: 8px;">声音库管理</label>
+        <!-- 第二部分：开发者 API 配置 -->
+        <div style="border-top: 1px dashed var(--border-color); padding-top: 20px; margin-bottom: 24px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; font-family: 'Outfit', sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">开发者 API 配置</div>
           
-          <!-- List of current voices -->
-          <div id="voice-list-container" style="max-height: 180px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
-            <!-- Items populated by JS -->
+          <div class="form-group">
+            <label class="form-label" for="anthropic-key">ANTHROPIC (CLAUDE) API KEY</label>
+            <input type="password" class="form-input" id="anthropic-key" placeholder="sk-ant-api03-...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="anthropic-base">ANTHROPIC API BASE URL (代理/中转接口地址)</label>
+            <input type="text" class="form-input" id="anthropic-base" placeholder="默认官方: https://api.anthropic.com">
           </div>
           
-          <!-- Add voice form -->
-          <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
-            <div style="display: flex; gap: 8px;">
-              <input type="text" class="form-input" id="new-voice-name" placeholder="声音名称 (例如: Chisaki)" style="flex: 1; padding: 8px 10px; font-size: 0.85rem;">
-              <input type="text" class="form-input" id="new-voice-id" placeholder="Voice ID (ElevenLabs ID)" style="flex: 1.2; padding: 8px 10px; font-size: 0.85rem;">
-            </div>
-            <button type="button" class="save-btn" onclick="addNewVoice()" style="margin-top: 0; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; width: auto; align-self: flex-end;">添加新声音</button>
+          <div class="form-group">
+            <label class="form-label" for="elevenlabs-key">ELEVENLABS API KEY</label>
+            <input type="password" class="form-input" id="elevenlabs-key" placeholder="填入您的 ElevenLabs Key">
           </div>
-        </div>
-      </div>
-
-      <!-- 第二部分：开发者 API 配置 -->
-      <div style="border-top: 1px dashed var(--border-color); padding-top: 20px; margin-bottom: 24px;">
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; font-family: 'Outfit', sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">开发者 API 配置</div>
-        
-        <div class="form-group">
-          <label class="form-label" for="anthropic-key">ANTHROPIC (CLAUDE) API KEY</label>
-          <input type="password" class="form-input" id="anthropic-key" placeholder="sk-ant-api03-...">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="anthropic-base">ANTHROPIC API BASE URL (代理/中转接口地址)</label>
-          <input type="text" class="form-input" id="anthropic-base" placeholder="默认官方: https://api.anthropic.com">
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label" for="elevenlabs-key">ELEVENLABS API KEY</label>
-          <input type="password" class="form-input" id="elevenlabs-key" placeholder="填入您的 ElevenLabs Key">
         </div>
       </div>
       
-      <button class="save-btn" onclick="saveSettings()">保存并关闭</button>
+      <div class="modal-footer">
+        <button class="save-btn" onclick="saveSettings()">保存并关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Modal -->
+  <div class="modal-overlay" id="confirm-modal" style="z-index: 1100;">
+    <div class="modal-sheet confirm-sheet">
+      <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">确认操作</div>
+      <div id="confirm-modal-message" style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5;">确定要删除吗？</div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="theme-select-btn" id="confirm-modal-cancel" style="margin: 0; padding: 10px 18px; border-radius: 12px; font-size: 0.9rem;">取消</button>
+        <button class="save-btn" id="confirm-modal-ok" style="margin: 0; padding: 10px 18px; border-radius: 12px; background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); font-size: 0.9rem; width: auto;">确定</button>
+      </div>
+    </div>
+  </div>
     </div>
   </div>
 
@@ -2723,13 +2801,56 @@
       showToast('声音添加成功！', 2000);
     }
 
-    function deleteVoice(id) {
+    function showCustomConfirm(message) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        const messageEl = document.getElementById('confirm-modal-message');
+        const cancelBtn = document.getElementById('confirm-modal-cancel');
+        const okBtn = document.getElementById('confirm-modal-ok');
+        
+        if (!modal || !messageEl || !cancelBtn || !okBtn) {
+          resolve(confirm(message));
+          return;
+        }
+        
+        messageEl.innerText = message;
+        modal.classList.add('open');
+        
+        function handleCancel() {
+          cleanup();
+          resolve(false);
+        }
+        
+        function handleOk() {
+          cleanup();
+          resolve(true);
+        }
+        
+        function cleanup() {
+          modal.classList.remove('open');
+          cancelBtn.removeEventListener('click', handleCancel);
+          okBtn.removeEventListener('click', handleOk);
+        }
+        
+        // Replace buttons to flush duplicate click listeners
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newOkBtn = okBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+        
+        newCancelBtn.addEventListener('click', handleCancel);
+        newOkBtn.addEventListener('click', handleOk);
+      });
+    }
+
+    async function deleteVoice(id) {
       const voice = voicesList.find(v => v.id === id);
       const voiceName = voice ? voice.name : '';
       const confirmMsg = voiceName ? `确定要删除声音「${voiceName}」吗？` : '确定要删除该声音吗？';
-      if (!confirm(confirmMsg)) {
-        return;
-      }
+      
+      const confirmed = await showCustomConfirm(confirmMsg);
+      if (!confirmed) return;
+      
       voicesList = voicesList.filter(v => v.id !== id);
       localStorage.setItem('custom_voices', JSON.stringify(voicesList));
       loadVoicesList();
