@@ -768,12 +768,7 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    body.light-theme .voice-orb {
-      background: radial-gradient(circle at 30% 30%, rgba(34, 211, 238, 0.15) 0%, rgba(124, 58, 237, 0.05) 60%, rgba(255, 255, 255, 0.7) 100%);
-      border: 2px solid rgba(124, 58, 237, 0.5);
-      box-shadow: 0 0 15px rgba(124, 58, 237, 0.3), 
-                  inset 0 0 10px rgba(124, 58, 237, 0.2);
-    }
+
     body.light-theme .status-toast {
       background: rgba(255, 255, 255, 0.85);
       border: 1px solid rgba(124, 58, 237, 0.2);
@@ -994,25 +989,61 @@
       background-color: rgba(0, 0, 0, 0.12);
     }
 
-    /* The Central Voice Orb */
-    .voice-orb {
+    /* Voice Orb Container - centers the voice orb inside the visualizer */
+    .voice-orb-container {
       position: absolute;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95) 0%, rgba(139, 92, 246, 0.2) 50%, rgba(124, 58, 237, 0.08) 100%);
-      border: 2px solid rgba(124, 58, 237, 0.45);
-      box-shadow: 0 0 15px rgba(124, 58, 237, 0.25), inset 0 0 10px rgba(255, 255, 255, 0.6);
+      width: 80px;
+      height: 80px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, border-color 0.2s;
+      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* The Central Voice Orb */
+    .voice-orb {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(167, 139, 250, 0.45) 0%, rgba(139, 92, 246, 0.2) 50%, rgba(124, 58, 237, 0) 100%);
+      filter: blur(4.5px);
+      box-shadow: 0 0 25px rgba(139, 92, 246, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.15s, background 0.15s;
+      animation: liquid-blob 8s infinite ease-in-out;
+      overflow: hidden;
       z-index: 5;
     }
     body.light-theme .voice-orb {
-      background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(124, 58, 237, 0.05) 100%);
-      border: 2px solid rgba(124, 58, 237, 0.35);
-      box-shadow: 0 0 15px rgba(124, 58, 237, 0.15), inset 0 0 8px rgba(124, 58, 237, 0.1);
+      background: radial-gradient(circle at center, rgba(167, 139, 250, 0.35) 0%, rgba(139, 92, 246, 0.12) 60%, rgba(124, 58, 237, 0) 100%);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+    }
+    .voice-orb-noise {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.15;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+    @keyframes liquid-blob {
+      0%, 100% {
+        border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+      }
+      33% {
+        border-radius: 54% 46% 58% 42% / 46% 52% 48% 54%;
+      }
+      66% {
+        border-radius: 46% 54% 42% 58% / 54% 44% 56% 46%;
+      }
     }
 
     .orb-inner-core, .orb-particle {
@@ -1032,87 +1063,69 @@
     .orb-subtitle-container {
       max-width: 85%;
       text-align: center;
-      min-height: 70px;
+      min-height: 80px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 6;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
     }
 
     #orb-subtitle {
-      font-family: 'Georgia', 'Times New Roman', serif;
-      font-style: italic;
       font-size: 1.25rem;
       line-height: 1.7;
       color: var(--text-main);
       opacity: 0.95;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
       text-align: center;
+      transition: opacity 400ms cubic-bezier(0.25, 0.8, 0.25, 1), transform 400ms cubic-bezier(0.25, 0.8, 0.25, 1), filter 400ms cubic-bezier(0.25, 0.8, 0.25, 1);
+      transform: translateY(0);
+      filter: blur(0);
+      opacity: 1;
     }
     body.light-theme #orb-subtitle {
       text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8);
     }
 
-    /* Streaming subtitle classes */
-    .completed-sentence {
-      opacity: 0.45;
-      filter: blur(0.3px);
-      transition: all 0.5s ease;
-      display: inline;
-      margin-right: 4px;
+    /* Subtitle animation states */
+    #orb-subtitle.fading-in {
+      opacity: 0;
+      transform: translateY(6px);
+      filter: blur(4px);
     }
-    .current-sentence {
-      opacity: 1;
-      display: inline;
-      font-weight: 500;
+
+    #orb-subtitle.fading-out {
+      opacity: 0;
+      transform: translateY(-4px);
+      filter: blur(4px);
     }
-    @keyframes char-glow-in {
-      0% {
-        opacity: 0;
-        transform: scale(0.85) translateY(2px);
-        text-shadow: 0 0 10px rgba(34, 211, 238, 0.9), 0 0 20px rgba(124, 58, 237, 0.4);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-        text-shadow: none;
-      }
+
+    /* English line styling: Georgia italic large */
+    #orb-subtitle .english-line {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 1.35rem;
+      font-weight: normal;
+      color: #ffffff;
+      display: block;
+      margin-bottom: 4px;
     }
-    .stream-char {
-      display: inline-block;
-      animation: char-glow-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-      white-space: pre-wrap;
+    body.light-theme #orb-subtitle .english-line {
+      color: #111827;
     }
-    .glowing-dots {
-      display: inline-flex;
-      gap: 3px;
-      align-items: center;
-      color: var(--neon-cyan);
-      text-shadow: 0 0 10px var(--neon-cyan);
-      vertical-align: middle;
+
+    /* Translation line styling: non-italic sans-serif small (2/3 of english size) */
+    #orb-subtitle .translation-line {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-style: normal;
+      font-size: 0.9rem;
+      font-weight: normal;
+      color: rgba(255, 255, 255, 0.7);
+      display: block;
     }
-    .glowing-dots span {
-      font-size: 1.5rem;
-      line-height: 0.5;
-      font-weight: 800;
-      animation: dot-glow 1.4s infinite both;
-    }
-    .glowing-dots span:nth-child(1) { animation-delay: 0s; }
-    .glowing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .glowing-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes dot-glow {
-      0%, 100% { opacity: 0.2; transform: scale(0.8); }
-      50% { opacity: 1; transform: scale(1.3); text-shadow: 0 0 12px var(--neon-cyan); }
-    }
-    @keyframes translation-fade-in {
-      from { opacity: 0; transform: translateY(5px); filter: blur(2px); }
-      to { opacity: 0.75; transform: translateY(0); filter: none; }
-    }
-    .stream-translation {
-      animation: translation-fade-in 0.8s ease forwards;
-      margin-top: 10px;
+    body.light-theme #orb-subtitle .translation-line {
+      color: rgba(0, 0, 0, 0.6);
     }
 
     /* Monospace Tech Footer */
@@ -1780,11 +1793,15 @@
           <div class="orb-ring ring-3" id="orb-ring-3"></div>
           <div class="orb-ring ring-4" id="orb-ring-4"></div>
           
-          <!-- The Central Voice Orb -->
-          <div class="voice-orb" id="voice-orb">
-            <div class="orb-inner-core"></div>
-            <div class="orb-particle orb-p1"></div>
-            <div class="orb-particle orb-p2"></div>
+          <!-- Voice Orb Container -->
+          <div class="voice-orb-container" id="voice-orb-container">
+            <!-- The Central Voice Orb -->
+            <div class="voice-orb" id="voice-orb">
+              <div class="voice-orb-noise"></div>
+              <div class="orb-inner-core"></div>
+              <div class="orb-particle orb-p1"></div>
+              <div class="orb-particle orb-p2"></div>
+            </div>
           </div>
         </div>
         
@@ -3158,76 +3175,59 @@
       return marked.parse(processed);
     }
 
-    // Typewriter Subtitle streaming animation for Immersive Nebula Mode
-    let typewriterTimer = null;
+    // Subtitle management for Immersive Orb Mode with fade-in/fade-out transitions
+    let currentSentences = [];
+    let currentSentenceTimes = []; // { start, end } for each sentence
+    let activeSentenceIndex = -1;
+    let subtitleTimer = null; // fallback timer for no-audio playback
+    let lastRenderedIndex = -1;
+    let lastRenderedState = '';
 
     function typewriteSubtitle(text) {
       const subtitleEl = document.getElementById('orb-subtitle');
       if (!subtitleEl) return;
 
-      // Clear any active typewriter timers
-      if (typewriterTimer) {
-        clearTimeout(typewriterTimer);
-        typewriterTimer = null;
+      // Clear any active timers
+      if (subtitleTimer) {
+        clearTimeout(subtitleTimer);
+        subtitleTimer = null;
       }
 
-      if (text === 'Thinking...') {
-        subtitleEl.innerHTML = `<em style="color:var(--text-muted)">正在思考中...</em>`;
+      // Reset sync state
+      currentSentences = [];
+      currentSentenceTimes = [];
+      activeSentenceIndex = -1;
+      lastRenderedIndex = -1;
+      lastRenderedState = '';
+
+      if (text === 'Thinking...' || text === '') {
+        subtitleEl.innerHTML = '';
+        subtitleEl.className = '';
         return;
       }
 
       if (text.startsWith('❌')) {
         subtitleEl.innerHTML = `<span style="color:var(--neon-pink)">${text}</span>`;
+        subtitleEl.className = '';
         return;
       }
 
       // Parse sentences and translations
-      const sentences = parseSentences(text);
-      if (sentences.length === 0) {
+      currentSentences = parseSentences(text);
+      if (currentSentences.length === 0) {
         subtitleEl.innerHTML = '';
+        subtitleEl.className = '';
         return;
       }
 
-      let currentSentenceIndex = 0;
-      let currentCharIndex = 0;
-      let currentTypedText = '';
-
-      function typeChar() {
-        if (currentSentenceIndex >= sentences.length) {
-          // Finished typing all sentences
-          subtitleEl.innerHTML = renderSubtitleState(sentences, sentences.length, '');
-          typewriterTimer = null;
-          return;
-        }
-
-        const currentSentence = sentences[currentSentenceIndex];
-        const sentenceText = currentSentence.text;
-
-        if (currentCharIndex < sentenceText.length) {
-          const char = sentenceText[currentCharIndex];
-          currentTypedText += char;
-          currentCharIndex++;
-
-          // Update subtitle UI
-          subtitleEl.innerHTML = renderSubtitleState(sentences, currentSentenceIndex, currentTypedText);
-
-          // Calculate delay based on character type for natural flow
-          const isAlpha = /[a-zA-Z]/.test(char);
-          const delay = isAlpha ? 25 : 65;
-          typewriterTimer = setTimeout(typeChar, delay);
-        } else {
-          // Current sentence finished typing, move to the next sentence
-          currentSentenceIndex++;
-          currentCharIndex = 0;
-          currentTypedText = '';
-          
-          // Small pause between sentences for natural flow
-          typewriterTimer = setTimeout(typeChar, 400);
-        }
+      // If audio is playing and not paused, updateSubtitleSync will handle rendering
+      if (currentAudio && !currentAudio.paused && currentAudio.duration > 0) {
+        calculateSentenceTimes(currentAudio.duration);
+        updateSubtitleSync(currentAudio.currentTime, currentAudio.duration);
+      } else {
+        // Fallback: use the timer
+        startFallbackSubtitleTimer();
       }
-
-      // Start the typewriter loop
-      typeChar();
     }
 
     function parseSentences(rawText) {
@@ -3265,30 +3265,166 @@
       return sentences;
     }
 
-    function renderSubtitleState(sentences, currentIndex, currentTypedText) {
-      let html = '';
-      for (let i = 0; i < sentences.length; i++) {
-        const s = sentences[i];
-        if (i < currentIndex) {
-          // Completed sentence with blur and low opacity
-          html += `<span class="completed-sentence">${escapeHTML(s.text)}</span>`;
-          if (s.translation) {
-            html += `<span class="translation-line">${escapeHTML(s.translation)}</span>`;
-          }
-        } else if (i === currentIndex) {
-          // Current active sentence being typed
-          let charsHtml = '';
-          for (let c of currentTypedText) {
-            charsHtml += `<span class="stream-char">${escapeHTML(c)}</span>`;
-          }
-          html += `<span class="current-sentence">${charsHtml}</span>`;
+    function calculateSentenceTimes(duration) {
+      if (!duration || isNaN(duration)) return;
+      
+      const totalLen = currentSentences.reduce((acc, s) => acc + s.text.length + (s.translation ? s.translation.length : 0), 0);
+      let elapsed = 0;
+      currentSentenceTimes = currentSentences.map(s => {
+        const sLen = s.text.length + (s.translation ? s.translation.length : 0);
+        const percent = totalLen > 0 ? (sLen / totalLen) : (1 / currentSentences.length);
+        const sDuration = duration * percent;
+        const start = elapsed;
+        const end = elapsed + sDuration;
+        elapsed = end;
+        return { start, end };
+      });
+    }
+
+    function updateSubtitleSync(currentTime, duration) {
+      if (!currentSentences || currentSentences.length === 0) return;
+      
+      if (currentSentenceTimes.length === 0 && duration > 0) {
+        calculateSentenceTimes(duration);
+      }
+      
+      if (currentSentenceTimes.length === 0) {
+        // Fallback: if duration is not loaded yet, just show the first sentence
+        showSentence(0, 'stable');
+        return;
+      }
+      
+      // Find which sentence we are in
+      let index = currentSentenceTimes.findIndex(t => currentTime >= t.start && currentTime <= t.end);
+      if (index === -1) {
+        if (currentTime > currentSentenceTimes[currentSentenceTimes.length - 1].end) {
+          index = currentSentences.length; // Finished
         } else {
-          // Remaining sentences represented as glowing dots
-          html += ` <span class="glowing-dots"><span>.</span><span>.</span><span>.</span></span>`;
-          break; // Only show one set of dots
+          index = 0;
         }
       }
-      return html;
+      
+      if (index >= currentSentences.length) {
+        // Finished all sentences, clear with fade-out if not already done
+        const subtitleEl = document.getElementById('orb-subtitle');
+        if (subtitleEl && !subtitleEl.classList.contains('fading-out')) {
+          subtitleEl.className = 'fading-out';
+          setTimeout(() => {
+            subtitleEl.innerHTML = '';
+            subtitleEl.className = '';
+          }, 400);
+        }
+        return;
+      }
+      
+      const timeRange = currentSentenceTimes[index];
+      const sDuration = timeRange.end - timeRange.start;
+      const fadeWindow = Math.min(0.4, sDuration / 2);
+      
+      let state = 'stable'; // 'fading-in', 'fading-out', or 'stable'
+      if (currentTime - timeRange.start < fadeWindow) {
+        state = 'fading-in';
+      } else if (timeRange.end - currentTime < fadeWindow) {
+        state = 'fading-out';
+      }
+      
+      showSentence(index, state);
+    }
+
+    function showSentence(index, state) {
+      const subtitleEl = document.getElementById('orb-subtitle');
+      if (!subtitleEl) return;
+      
+      if (lastRenderedIndex === index && lastRenderedState === state) {
+        return;
+      }
+      
+      const s = currentSentences[index];
+      if (!s) return;
+      
+      lastRenderedIndex = index;
+      lastRenderedState = state;
+      
+      if (state === 'fading-in') {
+        subtitleEl.className = 'fading-in';
+        subtitleEl.innerHTML = `
+          <span class="english-line">${escapeHTML(s.text)}</span>
+          ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
+        `;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (lastRenderedState === 'fading-in' && lastRenderedIndex === index) {
+              subtitleEl.className = '';
+            }
+          });
+        });
+      } else if (state === 'fading-out') {
+        subtitleEl.className = 'fading-out';
+      } else {
+        subtitleEl.className = '';
+        subtitleEl.innerHTML = `
+          <span class="english-line">${escapeHTML(s.text)}</span>
+          ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
+        `;
+      }
+    }
+
+    function startFallbackSubtitleTimer() {
+      if (subtitleTimer) clearTimeout(subtitleTimer);
+      
+      let index = 0;
+      
+      function nextSentence() {
+        if (index >= currentSentences.length) {
+          const subtitleEl = document.getElementById('orb-subtitle');
+          if (subtitleEl) {
+            subtitleEl.className = 'fading-out';
+            setTimeout(() => {
+              subtitleEl.innerHTML = '';
+              subtitleEl.className = '';
+            }, 400);
+          }
+          return;
+        }
+        
+        const subtitleEl = document.getElementById('orb-subtitle');
+        if (subtitleEl) {
+          if (index > 0) {
+            subtitleEl.className = 'fading-out';
+            setTimeout(() => {
+              showSentenceFallback(index);
+            }, 400);
+          } else {
+            showSentenceFallback(index);
+          }
+        }
+      }
+      
+      function showSentenceFallback(idx) {
+        const s = currentSentences[idx];
+        const subtitleEl = document.getElementById('orb-subtitle');
+        if (!subtitleEl || !s) return;
+        
+        subtitleEl.innerHTML = `
+          <span class="english-line">${escapeHTML(s.text)}</span>
+          ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
+        `;
+        subtitleEl.className = 'fading-in';
+        
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            subtitleEl.className = '';
+          });
+        });
+        
+        const charCount = s.text.length + (s.translation ? s.translation.length : 0);
+        const delay = Math.min(7000, 2500 + charCount * 80);
+        
+        index++;
+        subtitleTimer = setTimeout(nextSentence, delay);
+      }
+      
+      nextSentence();
     }
 
     // UI Helper Functions
@@ -3407,6 +3543,16 @@
           stopOrbAnimation();
           if (currentViewMode === 'orb') {
             startNebulaLoop();
+            
+            // Clear subtitle with fade-out
+            const subtitleEl = document.getElementById('orb-subtitle');
+            if (subtitleEl) {
+              subtitleEl.className = 'fading-out';
+              setTimeout(() => {
+                subtitleEl.innerHTML = '';
+                subtitleEl.className = '';
+              }, 400);
+            }
           }
         };
 
@@ -3416,6 +3562,15 @@
             const cur = formatTime(currentAudio.currentTime);
             const total = formatTime(currentAudio.duration);
             durationEl.innerText = `${cur} / ${total}`;
+          }
+
+          if (currentViewMode === 'orb' && currentSentences.length > 0) {
+            // Cancel fallback timer since we now have active audio timeupdate
+            if (subtitleTimer) {
+              clearTimeout(subtitleTimer);
+              subtitleTimer = null;
+            }
+            updateSubtitleSync(currentAudio.currentTime, currentAudio.duration);
           }
         });
         
@@ -3447,12 +3602,8 @@
     let thinkingAnimationId = null;
 
     function startNebulaLoop() {
-      // Gentle breathing animation for idle status
+      const container = document.getElementById('voice-orb-container');
       const orb = document.getElementById('voice-orb');
-      const ring1 = document.getElementById('orb-ring-1');
-      const ring2 = document.getElementById('orb-ring-2');
-      const ring3 = document.getElementById('orb-ring-3');
-      const ring4 = document.getElementById('orb-ring-4');
       
       let angle = 0;
       
@@ -3462,13 +3613,17 @@
           return;
         }
         idleAnimationId = requestAnimationFrame(animateIdle);
-        angle += 0.02;
-        const scale = 0.95 + Math.sin(angle) * 0.05; // gentle breathing between 0.9 and 1.0
+        angle += 0.025; // 4.2s cycle
+        const scale = 0.95 + Math.sin(angle) * 0.05; // gentle breathing between 0.90 and 1.00
+        const opacity = 0.75 + Math.sin(angle) * 0.15; // gentle opacity breathing between 0.60 and 0.90
         
+        if (container) {
+          container.style.transform = `scale(${scale})`;
+          container.style.opacity = opacity;
+        }
         if (orb) {
-          orb.style.transform = `scale(${scale})`;
-          const glowColor = currentTheme === 'light' ? '124, 58, 237' : '249, 115, 22';
-          orb.style.boxShadow = `0 0 ${10 + Math.sin(angle) * 5}px rgba(${glowColor}, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.4)`;
+          const glowRadius = 15 + Math.sin(angle) * 5;
+          orb.style.boxShadow = `0 0 ${glowRadius}px rgba(139, 92, 246, 0.25)`;
         }
       }
       
@@ -3488,6 +3643,7 @@
       if (!analyserNode) return;
       
       const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+      const container = document.getElementById('voice-orb-container');
       const orb = document.getElementById('voice-orb');
       const ring1 = document.getElementById('orb-ring-1');
       const ring2 = document.getElementById('orb-ring-2');
@@ -3495,6 +3651,9 @@
       const ring4 = document.getElementById('orb-ring-4');
       
       updateTechStatus('speaking');
+      
+      let angle = 0;
+      let smoothAverage = 0;
       
       function draw() {
         if (currentViewMode !== 'orb' || !currentAudio || currentAudio.paused) {
@@ -3508,54 +3667,53 @@
         for (let i = 0; i < dataArray.length; i++) {
           total += dataArray[i];
         }
-        const average = total / dataArray.length;
+        const average = total / dataArray.length; // 0 to 255
+        smoothAverage = smoothAverage * 0.7 + average * 0.3;
         
-        let scale = 0.8 + (average / 90); 
-        if (scale > 2.2) scale = 2.2;
+        // Base sine wave breathing
+        angle += 0.025;
+        const baseScale = 0.95 + Math.sin(angle) * 0.05;
+        const baseOpacity = 0.75 + Math.sin(angle) * 0.15;
         
-        const borderOpacity = 0.3 + (average / 255) * 0.7;
-        const glowRadius = 15 + (average * 0.4);
+        // Blend factor: 0 when silent, 1 when loud
+        const audioFactor = Math.min(1.0, smoothAverage / 40);
         
-        let color;
-        if (currentTheme === 'light') {
-          // Shift from purple to cyan
-          const r = Math.round(124 - (average * 0.35));
-          const g = Math.round(58 + (average * 0.6));
-          const b = Math.round(237 + (average * 0.0));
-          color = `${r}, ${g}, ${b}`;
-        } else {
-          // Shift from red to indigo
-          const r = Math.round(239 - (average * 0.45));
-          const g = Math.round(68 + (average * 0.15));
-          const b = Math.round(68 + (average * 0.66));
-          color = `${r}, ${g}, ${b}`;
+        // Target scale/opacity
+        const targetScale = baseScale * (1 - audioFactor) + (1.0 + (smoothAverage / 70)) * audioFactor;
+        const finalScale = Math.min(1.35, targetScale); // Limit scale to 1.35x
+        
+        const finalOpacity = baseOpacity * (1 - audioFactor) + 1.0 * audioFactor;
+        
+        if (container) {
+          container.style.transform = `scale(${finalScale})`;
+          container.style.opacity = finalOpacity;
         }
         
         if (orb) {
-          orb.style.transform = `scale(${scale})`;
-          orb.style.borderColor = `rgba(${color}, ${borderOpacity})`;
-          orb.style.boxShadow = `0 0 ${glowRadius}px rgba(${color}, ${borderOpacity * 0.6}), inset 0 0 ${glowRadius * 0.5}px rgba(${color}, ${borderOpacity * 0.4})`;
+          const glowRadius = 15 + smoothAverage * 0.5;
+          const purpleGlow = `rgba(139, 92, 246, ${0.25 + (smoothAverage / 255) * 0.55})`;
+          orb.style.boxShadow = `0 0 ${glowRadius}px ${purpleGlow}`;
+          
+          // Speed up the liquid-blob animation during speech by modifying the animation-duration
+          const animSpeed = 8 - Math.min(6, (smoothAverage / 30) * 5); // 8s down to 2s
+          orb.style.animationDuration = `${animSpeed}s`;
         }
         
         if (ring1) {
-          ring1.style.transform = `scale(${1 + (average / 150)})`;
-          ring1.style.opacity = 0.15 + (average / 255) * 0.65;
-          ring1.style.borderColor = `rgba(${color}, ${borderOpacity * 0.4})`;
+          ring1.style.transform = `scale(${1.0 + (smoothAverage / 150)})`;
+          ring1.style.opacity = 0.15 + (smoothAverage / 255) * 0.45;
         }
         if (ring2) {
-          ring2.style.transform = `scale(${1 + (average / 120)})`;
-          ring2.style.opacity = 0.12 + (average / 255) * 0.58;
-          ring2.style.borderColor = `rgba(${color}, ${borderOpacity * 0.3})`;
+          ring2.style.transform = `scale(${1.0 + (smoothAverage / 120)})`;
+          ring2.style.opacity = 0.12 + (smoothAverage / 255) * 0.38;
         }
         if (ring3) {
-          ring3.style.transform = `scale(${1 + (average / 90)})`;
-          ring3.style.opacity = 0.10 + (average / 255) * 0.50;
-          ring3.style.borderColor = `rgba(${color}, ${borderOpacity * 0.2})`;
+          ring3.style.transform = `scale(${1.0 + (smoothAverage / 90)})`;
+          ring3.style.opacity = 0.10 + (smoothAverage / 255) * 0.30;
         }
         if (ring4) {
-          ring4.style.transform = `scale(${1 + (average / 60)})`;
-          ring4.style.opacity = 0.08 + (average / 255) * 0.42;
-          ring4.style.borderColor = `rgba(${color}, ${borderOpacity * 0.15})`;
+          ring4.style.transform = `scale(${1.0 + (smoothAverage / 60)})`;
+          ring4.style.opacity = 0.08 + (smoothAverage / 255) * 0.22;
         }
       }
       
@@ -3575,6 +3733,7 @@
     }
 
     function startRecordingOrbAnimation() {
+      const container = document.getElementById('voice-orb-container');
       const orb = document.getElementById('voice-orb');
       const ring1 = document.getElementById('orb-ring-1');
       const ring2 = document.getElementById('orb-ring-2');
@@ -3590,16 +3749,18 @@
           return;
         }
         recordingAnimationId = requestAnimationFrame(animate);
-        angle += 0.05;
-        const amplitude = Math.sin(angle) * 0.1 + 0.1; // 0 to 0.2
+        angle += 0.06;
+        const amplitude = Math.sin(angle) * 0.08 + 0.08; // 0 to 0.16
         const scale = 1.0 + amplitude;
         
+        if (container) {
+          container.style.transform = `scale(${scale})`;
+          container.style.opacity = 0.9 + amplitude * 0.5;
+        }
         if (orb) {
-          orb.style.transform = `scale(${scale})`;
-          const glowColor = currentTheme === 'light' ? '124, 58, 237' : '239, 68, 68';
-          const borderOpacity = 0.4 + amplitude * 2;
-          orb.style.borderColor = `rgba(${glowColor}, ${borderOpacity})`;
-          orb.style.boxShadow = `0 0 ${20 + amplitude * 50}px rgba(${glowColor}, ${borderOpacity * 0.6})`;
+          const glowRadius = 20 + amplitude * 40;
+          orb.style.boxShadow = `0 0 ${glowRadius}px rgba(139, 92, 246, 0.4)`;
+          orb.style.animationDuration = '3s';
         }
         
         if (ring1) ring1.style.transform = `scale(${1 + amplitude * 0.5}) rotate(${angle * 10}deg)`;
@@ -3619,21 +3780,39 @@
     }
 
     function startThinkingAnimation() {
+      const container = document.getElementById('voice-orb-container');
       const orb = document.getElementById('voice-orb');
+      const ring1 = document.getElementById('orb-ring-1');
+      const ring2 = document.getElementById('orb-ring-2');
+      const ring3 = document.getElementById('orb-ring-3');
+      const ring4 = document.getElementById('orb-ring-4');
       let angle = 0;
       
       function animateThinking() {
-        if (currentViewMode !== 'orb' || !orb) {
+        if (currentViewMode !== 'orb') {
           thinkingAnimationId = null;
           return;
         }
         thinkingAnimationId = requestAnimationFrame(animateThinking);
-        angle += 0.08;
-        const scale = 0.9 + Math.sin(angle) * 0.05;
         
-        orb.style.transform = `scale(${scale})`;
-        const glowColor = currentTheme === 'light' ? '124, 58, 237' : '139, 92, 246';
-        orb.style.boxShadow = `0 0 ${15 + Math.sin(angle) * 8}px rgba(${glowColor}, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.4)`;
+        // Fast, tight pulse for computing/thinking state
+        angle += 0.15; 
+        const scale = 0.94 + Math.sin(angle) * 0.03; // rapid tight vibration
+        
+        if (container) {
+          container.style.transform = `scale(${scale})`;
+          container.style.opacity = 0.85;
+        }
+        if (orb) {
+          const glowRadius = 15 + Math.sin(angle) * 6;
+          orb.style.boxShadow = `0 0 ${glowRadius}px rgba(139, 92, 246, 0.35)`;
+          orb.style.animationDuration = '1.5s';
+        }
+        
+        if (ring1) ring1.style.transform = `scale(1.02) rotate(${angle * 15}deg)`;
+        if (ring2) ring2.style.transform = `scale(1.04) rotate(${-angle * 12}deg)`;
+        if (ring3) ring3.style.transform = `scale(1.06) rotate(${angle * 9}deg)`;
+        if (ring4) ring4.style.transform = `scale(1.08) rotate(${-angle * 6}deg)`;
       }
       
       if (thinkingAnimationId) cancelAnimationFrame(thinkingAnimationId);
@@ -3652,16 +3831,22 @@
     }
 
     function resetOrbAndRings() {
+      const container = document.getElementById('voice-orb-container');
       const orb = document.getElementById('voice-orb');
       const ring1 = document.getElementById('orb-ring-1');
       const ring2 = document.getElementById('orb-ring-2');
       const ring3 = document.getElementById('orb-ring-3');
       const ring4 = document.getElementById('orb-ring-4');
       
+      if (container) {
+        container.style.transform = '';
+        container.style.opacity = '';
+      }
       if (orb) {
         orb.style.transform = '';
         orb.style.borderColor = '';
         orb.style.boxShadow = '';
+        orb.style.animationDuration = '';
       }
       if (ring1) ring1.style.transform = '';
       if (ring2) ring2.style.transform = '';
