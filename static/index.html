@@ -874,7 +874,7 @@
       display: flex;
       justify-content: space-between;
       font-family: monospace;
-      font-size: 10px;
+      font-size: 13px;
       line-height: 1.5;
       color: rgba(255, 255, 255, 0.35);
       pointer-events: none;
@@ -1101,31 +1101,31 @@
       filter: blur(4px);
     }
 
-    /* English line styling: Georgia italic large */
+    /* English line styling: clean sans-serif large */
     #orb-subtitle .english-line {
-      font-family: 'Georgia', 'Times New Roman', serif;
-      font-style: italic;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-style: normal;
       font-size: 1.35rem;
-      font-weight: normal;
+      font-weight: 500;
       color: #ffffff;
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
     body.light-theme #orb-subtitle .english-line {
       color: #111827;
     }
 
-    /* Translation line styling: non-italic sans-serif small (2/3 of english size) */
+    /* Translation line styling: clean sans-serif small */
     #orb-subtitle .translation-line {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-style: normal;
-      font-size: 0.9rem;
-      font-weight: normal;
+      font-size: 1.05rem;
+      font-weight: 400;
       color: rgba(255, 255, 255, 0.7);
       display: block;
     }
     body.light-theme #orb-subtitle .translation-line {
-      color: rgba(0, 0, 0, 0.6);
+      color: rgba(0, 0, 0, 0.65);
     }
 
     /* Monospace Tech Footer */
@@ -1138,7 +1138,7 @@
       align-items: center;
       gap: 8px;
       font-family: monospace;
-      font-size: 11px;
+      font-size: 13px;
       color: rgba(255, 255, 255, 0.35);
       pointer-events: none;
       z-index: 6;
@@ -1148,12 +1148,12 @@
       color: rgba(0, 0, 0, 0.5);
     }
     .orb-tech-footer .status-dot {
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       background-color: rgba(139, 92, 246, 0.45);
       border-radius: 50%;
       display: inline-block;
-      box-shadow: 0 0 6px rgba(139, 92, 246, 0.2);
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.25);
       transition: background-color 0.3s, box-shadow 0.3s;
       animation: dot-pulse 1.8s infinite ease-in-out;
       vertical-align: middle;
@@ -3277,35 +3277,34 @@
     function parseSentences(rawText) {
       function cleanMarkdown(str) {
         if (!str) return '';
+        // Also strip any leftover HTML tags like unclosed <translation> to keep visual display clean
         return str.replace(/\*\*([^*]+)\*\*/g, '$1')
                   .replace(/\*([^*]+)\*/g, '$1')
                   .replace(/__([^_]+)__/g, '$1')
                   .replace(/_([^_]+)_/g, '$1')
-                  .replace(/`([^`]+)`/g, '$1');
+                  .replace(/`([^`]+)`/g, '$1')
+                  .replace(/<\/?[^>]+(>|$)/g, '')
+                  .trim();
       }
 
       const sentences = [];
-      if (rawText.includes('<translation>')) {
-        // Parse sentences with translation tags
-        const regex = /([^<]+)<translation>(.*?)<\/translation>/gi;
+      if (rawText.includes('<translation>') || rawText.includes('<translation')) {
+        // Parse sentences with translation tags, supporting optional/unclosed translation blocks
+        const regex = /([^<]+)(?:<translation>([^<]*)(?:<\/translation>)?)?/gi;
         let match;
         while ((match = regex.exec(rawText)) !== null) {
+          const eng = match[1] ? match[1].trim() : '';
+          const trans = match[2] ? match[2].trim() : '';
+          if (!eng && !trans) continue;
+          
           sentences.push({
-            text: cleanMarkdown(match[1].trim()),
-            translation: cleanMarkdown(match[2].trim())
+            text: cleanMarkdown(eng),
+            translation: cleanMarkdown(trans)
           });
         }
-        // Leftover text
-        const lastIndex = regex.lastIndex;
-        if (lastIndex < rawText.length) {
-          const leftover = rawText.substring(lastIndex).replace(/<\/translation>/g, '').trim();
-          if (leftover) {
-            sentences.push({ text: cleanMarkdown(leftover), translation: '' });
-          }
-        }
       } else {
-        // No translation tags, split by sentence endings
-        const parts = rawText.split(/(?<=[。！？.!?])\s+/);
+        // No translation tags, split by sentence endings. Supports Chinese punctuation splits without spaces.
+        const parts = rawText.split(/(?<=[。！？.!?])\s*/);
         parts.forEach(part => {
           if (part.trim()) {
             sentences.push({
@@ -3319,7 +3318,7 @@
     }
 
     function calculateSentenceTimes(duration) {
-      if (!duration || isNaN(duration)) return;
+      if (!duration || !Number.isFinite(duration) || duration <= 0) return;
       
       const totalLen = currentSentences.reduce((acc, s) => acc + s.text.length + (s.translation ? s.translation.length : 0), 0);
       let elapsed = 0;
@@ -3337,8 +3336,13 @@
     function updateSubtitleSync(currentTime, duration) {
       if (!currentSentences || currentSentences.length === 0) return;
       
-      if (currentSentenceTimes.length === 0 && duration > 0) {
-        calculateSentenceTimes(duration);
+      if (Number.isFinite(duration) && duration > 0) {
+        // Recalculate if sentence times are not computed yet, or if they were computed for a different duration
+        const needsCalculation = currentSentenceTimes.length === 0 || 
+                                 Math.abs(currentSentenceTimes[currentSentenceTimes.length - 1].end - duration) > 0.05;
+        if (needsCalculation) {
+          calculateSentenceTimes(duration);
+        }
       }
       
       if (currentSentenceTimes.length === 0) {
@@ -3608,6 +3612,9 @@
                 subtitleEl.className = '';
               }, 400);
             }
+            // Reset subtitle sentences so that timeupdate doesn't run anymore
+            currentSentences = [];
+            currentSentenceTimes = [];
           }
         };
 
@@ -3944,6 +3951,9 @@
       activeSpeechMessageId = messageId;
       audio.pause();
       audio.src = base64Audio;
+      
+      // Reset sentence times so they are recalculated for this new audio
+      currentSentenceTimes = [];
       
       stopAllWaveforms();
       stopOrbAnimation();
