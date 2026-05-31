@@ -3,11 +3,47 @@ import base64
 import requests
 import uvicorn
 import re
-from fastapi import FastAPI, HTTPException
+import jwt
+from datetime import datetime, timedelta
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
+from sqlalchemy.orm import Session
+from models import SessionLocal, init_db, User, ChatSession, hash_password, verify_password
+
+# Initialize Database Schema
+init_db()
+
+# DB Session Dependency Injection
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# JWT Config
+JWT_SECRET = os.environ.get("JWT_SECRET", "super-secret-voice-assistant-token")
+JWT_ALGORITHM = "HS256"
+
+def create_jwt_token(username: str) -> str:
+    payload = {
+        "sub": username,
+        "exp": datetime.utcnow() + timedelta(days=30)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def get_user_from_token(token: str, db: Session) -> Optional[User]:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            return None
+        return db.query(User).filter(User.username == username).first()
+    except Exception:
+        return None
 
 # Initialize FastAPI App
 app = FastAPI(title="Claude Voice Chat Assistant")
@@ -58,26 +94,177 @@ def get_config_endpoint():
         "default_anthropic_base": os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
     }
 
+# New schemas for authentication & sync
+class UserAuthPayload(BaseModel):
+    username: str
+    password: str
+
+class SessionSyncItem(BaseModel):
+    id: str
+    title: str
+    messages: str  # JSON array as string
+
+class SyncPayload(BaseModel):
+    anthropic_key: Optional[str] = None
+    anthropic_base: Optional[str] = None
+    elevenlabs_key: Optional[str] = None
+    voice_id: Optional[str] = None
+    chat_model: Optional[str] = None
+    response_language: Optional[str] = None
+    elevenlabs_model: Optional[str] = None
+    translate_enabled: Optional[bool] = False
+    translate_target: Optional[str] = None
+    ui_theme: Optional[str] = None
+    is_muted: Optional[bool] = False
+    sessions: List[SessionSyncItem] = []
+
+@app.post("/api/register")
+def register_user(req: UserAuthPayload, db: Session = Depends(get_db)):
+    username = req.username.strip()
+    password = req.password
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="用户名和密码不能为空")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="密码长度必须至少为6位")
+        
+    existing = db.query(User).filter(User.username == username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="该用户名已被注册")
+        
+    new_user = User(
+        username=username,
+        password_hash=hash_password(password)
+    )
+    db.add(new_user)
+    db.commit()
+    
+    token = create_jwt_token(username)
+    return {"status": "success", "token": token}
+
+@app.post("/api/login")
+def login_user(req: UserAuthPayload, db: Session = Depends(get_db)):
+    username = req.username.strip()
+    password = req.password
+    
+    user = db.query(User).filter(User.username == username).first()
+    if not user or not verify_password(user.password_hash, password):
+        raise HTTPException(status_code=400, detail="用户名或密码错误")
+        
+    token = create_jwt_token(username)
+    return {"status": "success", "token": token}
+
+@app.get("/api/user/sync")
+def sync_load(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    token = authorization.split(" ")[1]
+    user = get_user_from_token(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
+    sessions = db.query(ChatSession).filter(ChatSession.user_id == user.id).order_by(ChatSession.updated_at.desc()).all()
+    sessions_data = []
+    for s in sessions:
+        sessions_data.append({
+            "id": s.id,
+            "title": s.title,
+            "messages": s.messages
+        })
+        
+    return {
+        "anthropic_key": user.anthropic_key or "",
+        "anthropic_base": user.anthropic_base or "https://api.anthropic.com",
+        "elevenlabs_key": user.elevenlabs_key or "",
+        "voice_id": user.voice_id or "x7tNCivOKFAydss7fglA",
+        "chat_model": user.chat_model or "claude-3-5-haiku-20241022",
+        "response_language": user.response_language or "auto",
+        "elevenlabs_model": user.elevenlabs_model or "eleven_multilingual_v2",
+        "translate_enabled": user.translate_enabled or False,
+        "translate_target": user.translate_target or "Chinese",
+        "ui_theme": user.ui_theme or "dark",
+        "is_muted": user.is_muted or False,
+        "sessions": sessions_data
+    }
+
+@app.post("/api/user/sync")
+def sync_save(req: SyncPayload, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    token = authorization.split(" ")[1]
+    user = get_user_from_token(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
+    # Update settings
+    user.anthropic_key = req.anthropic_key
+    user.anthropic_base = req.anthropic_base
+    user.elevenlabs_key = req.elevenlabs_key
+    user.voice_id = req.voice_id
+    user.chat_model = req.chat_model
+    user.response_language = req.response_language
+    user.elevenlabs_model = req.elevenlabs_model
+    user.translate_enabled = req.translate_enabled
+    user.translate_target = req.translate_target
+    user.ui_theme = req.ui_theme
+    user.is_muted = req.is_muted
+    
+    # Update sessions (insert/update/delete)
+    existing_sessions = db.query(ChatSession).filter(ChatSession.user_id == user.id).all()
+    existing_session_ids = {s.id for s in existing_sessions}
+    
+    incoming_ids = set()
+    for s_item in req.sessions:
+        incoming_ids.add(s_item.id)
+        if s_item.id in existing_session_ids:
+            db_sess = db.query(ChatSession).filter(ChatSession.id == s_item.id, ChatSession.user_id == user.id).first()
+            if db_sess:
+                db_sess.title = s_item.title
+                db_sess.messages = s_item.messages
+                db_sess.updated_at = datetime.utcnow()
+        else:
+            new_sess = ChatSession(
+                id=s_item.id,
+                user_id=user.id,
+                title=s_item.title,
+                messages=s_item.messages
+            )
+            db.add(new_sess)
+            
+    for s_db in existing_sessions:
+        if s_db.id not in incoming_ids:
+            db.delete(s_db)
+            
+    db.commit()
+    return {"status": "success"}
+
 @app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
+async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """
     Orchestrates the API calls with Dual-Mode Routing:
     - Native Anthropic protocol if using official endpoints.
     - OpenAI-compatible protocol if using custom proxies (like OhMyGPT or API2D).
     """
-    # 1. Resolve API Keys (request body > environment variables)
-    anthropic_key = request.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
-    elevenlabs_key = request.elevenlabs_key or os.environ.get("ELEVENLABS_API_KEY")
-    voice_id = request.voice_id or os.environ.get("VOICE_ID") or "x7tNCivOKFAydss7fglA"
+    user = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        user = get_user_from_token(token, db)
+        
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录您的账号！")
+
+    # 1. Resolve API Keys (request body > user settings > environment variables)
+    anthropic_key = request.anthropic_key or user.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
+    elevenlabs_key = request.elevenlabs_key or user.elevenlabs_key or os.environ.get("ELEVENLABS_API_KEY")
+    voice_id = request.voice_id or user.voice_id or os.environ.get("VOICE_ID") or "x7tNCivOKFAydss7fglA"
     
-    # Resolve Model (request body > default Haiku)
-    model = request.model or "claude-3-5-haiku-20241022"
+    # Resolve Model (request body > user settings > default Haiku)
+    model = request.model or user.chat_model or "claude-3-5-haiku-20241022"
     
-    # Resolve ElevenLabs Model
-    elevenlabs_model = request.elevenlabs_model or "eleven_multilingual_v2"
+    # Resolve ElevenLabs Model (request body > user settings > default)
+    elevenlabs_model = request.elevenlabs_model or user.elevenlabs_model or "eleven_multilingual_v2"
     
-    # Resolve Anthropic Base URL (request body > environment variable > default official URL)
-    anthropic_base = request.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or "https://api.anthropic.com"
+    # Resolve Anthropic Base URL (request body > user settings > environment variable > default official URL)
+    anthropic_base = request.anthropic_base or user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or "https://api.anthropic.com"
     anthropic_base = anthropic_base.rstrip("/")
 
     if not anthropic_key:

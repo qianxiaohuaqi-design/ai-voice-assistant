@@ -17,3 +17,7 @@ claude_desktop_config.json
 *.log
 .tempmediaStorage/
 .system_generated/
+
+# SQLite databases
+*.db
+data.db

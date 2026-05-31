@@ -1742,7 +1742,119 @@
       background: rgba(0, 0, 0, 0.02) !important;
       color: #7c3aed;
     }
+
+    /* Auth Overlay Glassmorphic Styles */
+    .auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 10, 12, 0.95);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    
+    .auth-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .auth-card {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(20, 20, 25, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 28px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(124, 58, 237, 0.15);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transform: translateY(20px);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .auth-overlay.active .auth-card {
+      transform: translateY(0);
+    }
+    
+    .auth-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      justify-content: center;
+    }
+    
+    .auth-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+    
+    .auth-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .auth-switch-link {
+      font-size: 0.85rem;
+      color: #a78bfa;
+      text-align: center;
+      margin-top: 18px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    
+    .auth-switch-link:hover {
+      color: #c084fc;
+      text-decoration: underline;
+    }
   </style>
+
+  <!-- Login/Register Overlay Portal -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="brand-icon"></div>
+        <div class="auth-title" id="auth-title">登录您的语音助手</div>
+      </div>
+      <div class="auth-subtitle" id="auth-subtitle">请输入您的账号密码进行身份验证</div>
+      
+      <div class="form-group" style="margin-top: 10px;">
+        <label class="form-label" for="auth-username">用户名</label>
+        <input type="text" class="form-input" id="auth-username" placeholder="输入用户名">
+      </div>
+      
+      <div class="form-group" style="margin-top: 15px; margin-bottom: 24px;">
+        <label class="form-label" for="auth-password">密码</label>
+        <input type="password" class="form-input" id="auth-password" placeholder="输入密码">
+      </div>
+
+      <div class="auth-error" id="auth-error-msg" style="display: none; color: var(--neon-pink); font-size: 0.85rem; margin-bottom: 15px; text-align: center;"></div>
+      
+      <button class="save-btn" id="auth-primary-btn" onclick="handleAuthSubmit()">登录</button>
+      
+      <div class="auth-switch-link" id="auth-switch-link" onclick="toggleAuthMode()">
+        还没有账号？点击注册
+      </div>
+    </div>
+  </div>
 </head>
 <body>
 
@@ -2248,8 +2360,9 @@
         </div>
       </div>
       
-      <div class="modal-footer">
-        <button class="save-btn" onclick="saveSettings()">保存并关闭</button>
+      <div class="modal-footer" style="display: flex; gap: 10px;">
+        <button class="save-btn" onclick="saveSettings()" style="flex: 1.5; margin-top: 0;">保存并关闭</button>
+        <button class="save-btn" onclick="handleLogout()" style="flex: 1; margin-top: 0; background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);">退出登录</button>
       </div>
     </div>
   </div>
@@ -2296,46 +2409,11 @@
       { name: "Chisaki (您的专属声音)", id: "x7tNCivOKFAydss7fglA" }
     ];
 
-    // Load configurations on initialization
+    // Global Auth State
+    let authToken = localStorage.getItem('auth_token') || '';
+    let authMode = 'login'; // 'login' or 'register'
+
     window.onload = function() {
-      // Load values from localStorage
-      document.getElementById('anthropic-key').value = localStorage.getItem('anthropic_key') || '';
-      document.getElementById('anthropic-base').value = localStorage.getItem('anthropic_base') || 'https://api.anthropic.com';
-      document.getElementById('elevenlabs-key').value = localStorage.getItem('elevenlabs_key') || '';
-      
-      const savedModel = localStorage.getItem('chat_model') || 'deepseek-chat';
-      setCustomSelectValue('chat-model-dropdown', savedModel);
-      updateHUDModelInfo(); // Initialize top HUD model and voice model info
-
-      const savedLang = localStorage.getItem('response_language') || 'auto';
-      setCustomSelectValue('response-language-dropdown', savedLang);
-
-      const savedElevenLabsModel = localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2';
-      setCustomSelectValue('elevenlabs-model-dropdown', savedElevenLabsModel);
-      
-      const savedTransEnable = localStorage.getItem('translate_enable') === 'true';
-      const savedTransTarget = localStorage.getItem('translate_target') || 'Chinese';
-      
-      const transSwitch = document.getElementById('translate-enable-switch');
-      const transInput = document.getElementById('translate-enable');
-      if (transSwitch && transInput) {
-        transInput.value = savedTransEnable ? 'true' : 'false';
-        if (savedTransEnable) {
-          transSwitch.classList.add('active');
-        } else {
-          transSwitch.classList.remove('active');
-        }
-      }
-      setCustomSelectValue('translate-target-dropdown', savedTransTarget);
-      
-      const transTargetWrapper = document.getElementById('translate-target-wrapper');
-      if (transTargetWrapper) {
-        transTargetWrapper.style.display = savedTransEnable ? 'block' : 'none';
-      }
-      
-      // Load sessions and chat history
-      initSessions();
-
       // Load custom voice list
       loadVoicesList();
       
@@ -2438,6 +2516,7 @@
       }
       localStorage.setItem('chat_sessions', JSON.stringify(sessions));
       localStorage.setItem('active_session_id', activeSessionId);
+      syncSaveToServer();
     }
 
     function renderSessionsList() {
@@ -3006,6 +3085,7 @@
         if (darkBtn) darkBtn.classList.add('active');
         if (lightBtn) lightBtn.classList.remove('active');
       }
+      syncSaveToServer();
     }
 
     // Toggle Immersive Sphere / Text Chat view mode
@@ -3123,6 +3203,254 @@
       renderChatUI(); // Re-render chat UI to immediately apply new translation / settings
       closeModal();
       showToast('设置保存成功！', 2000);
+      syncSaveToServer();
+    }
+
+    // Authentication and synchronization functions
+    function toggleAuthMode() {
+      const title = document.getElementById('auth-title');
+      const subtitle = document.getElementById('auth-subtitle');
+      const primaryBtn = document.getElementById('auth-primary-btn');
+      const switchLink = document.getElementById('auth-switch-link');
+      const errMsg = document.getElementById('auth-error-msg');
+      
+      errMsg.style.display = 'none';
+      
+      if (authMode === 'login') {
+        authMode = 'register';
+        title.innerText = '注册新账号';
+        subtitle.innerText = '请设置您的用户名 and 密码以创建专属空间';
+        primaryBtn.innerText = '创建账号';
+        switchLink.innerText = '已有账号？点击登录';
+      } else {
+        authMode = 'login';
+        title.innerText = '登录您的语音助手';
+        subtitle.innerText = '请输入您的账号密码进行身份验证';
+        primaryBtn.innerText = '登录';
+        switchLink.innerText = '还没有账号？点击注册';
+      }
+    }
+
+    async function handleAuthSubmit() {
+      const username = document.getElementById('auth-username').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const errMsg = document.getElementById('auth-error-msg');
+      
+      if (!username || !password) {
+        errMsg.innerText = '用户名和密码不能为空';
+        errMsg.style.display = 'block';
+        return;
+      }
+      if (password.length < 6) {
+        errMsg.innerText = '密码长度必须至少为6位';
+        errMsg.style.display = 'block';
+        return;
+      }
+      
+      const url = authMode === 'login' ? '/api/login' : '/api/register';
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          errMsg.innerText = data.detail || '操作失败，请重试';
+          errMsg.style.display = 'block';
+          return;
+        }
+        
+        authToken = data.token;
+        localStorage.setItem('auth_token', authToken);
+        document.getElementById('auth-overlay').classList.remove('active');
+        
+        await syncLoadFromServer();
+        showToast(authMode === 'login' ? '登录成功！' : '注册成功！', 2000);
+      } catch (err) {
+        console.error(err);
+        errMsg.innerText = '连接服务器失败';
+        errMsg.style.display = 'block';
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('chat_sessions');
+      localStorage.removeItem('active_session_id');
+      localStorage.removeItem('anthropic_key');
+      localStorage.removeItem('elevenlabs_key');
+      location.reload();
+    }
+
+    async function syncSaveToServer() {
+      if (!authToken) return;
+      
+      const aKey = localStorage.getItem('anthropic_key') || '';
+      const aBase = localStorage.getItem('anthropic_base') || 'https://api.anthropic.com';
+      const eKey = localStorage.getItem('elevenlabs_key') || '';
+      const vId = localStorage.getItem('voice_id') || 'x7tNCivOKFAydss7fglA';
+      const lang = localStorage.getItem('response_language') || 'auto';
+      const eModel = localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2';
+      const transEnable = localStorage.getItem('translate_enable') === 'true';
+      const transTarget = localStorage.getItem('translate_target') || 'Chinese';
+      const theme = localStorage.getItem('ui_theme') || 'dark';
+      const muted = localStorage.getItem('is_muted') === 'true';
+      
+      const syncSessions = sessions.map(s => ({
+        id: s.id,
+        title: s.title,
+        messages: JSON.stringify(s.messages || [])
+      }));
+      
+      try {
+        await fetch('/api/user/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            anthropic_key: aKey,
+            anthropic_base: aBase,
+            elevenlabs_key: eKey,
+            voice_id: vId,
+            chat_model: document.getElementById('chat-model').value || 'claude-3-5-haiku-20241022',
+            response_language: lang,
+            elevenlabs_model: eModel,
+            translate_enabled: transEnable,
+            translate_target: transTarget,
+            ui_theme: theme,
+            is_muted: muted,
+            sessions: syncSessions
+          })
+        });
+      } catch (err) {
+        console.error('Failed to sync to server:', err);
+      }
+    }
+
+    async function syncLoadFromServer() {
+      if (!authToken) return;
+      
+      // Fetch server key configuration status in parallel
+      fetch('/api/config')
+        .then(response => response.json())
+        .then(config => {
+          window.serverConfig = config;
+          
+          const anthropicKeyInput = document.getElementById('anthropic-key');
+          const elevenLabsKeyInput = document.getElementById('elevenlabs-key');
+          const anthropicBaseInput = document.getElementById('anthropic-base');
+
+          if (config.has_anthropic_key) {
+            anthropicKeyInput.placeholder = "已在服务器端配置默认 Key (可在此输入自定义 Key 覆盖)";
+          }
+          if (config.has_elevenlabs_key) {
+            elevenLabsKeyInput.placeholder = "已在服务器端配置默认 Key (可在此输入自定义 Key 覆盖)";
+          }
+          if (config.default_anthropic_base && !localStorage.getItem('anthropic_base')) {
+            anthropicBaseInput.value = config.default_anthropic_base;
+          }
+        })
+        .catch(err => console.error("Failed to fetch server config:", err));
+
+      try {
+        const response = await fetch('/api/user/sync', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (response.status === 401) {
+          localStorage.removeItem('auth_token');
+          authToken = '';
+          document.getElementById('auth-overlay').classList.add('active');
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error('Failed to load settings from server');
+        }
+        
+        const data = await response.json();
+        
+        // Restore settings into localStorage
+        localStorage.setItem('anthropic_key', data.anthropic_key || '');
+        localStorage.setItem('anthropic_base', data.anthropic_base || 'https://api.anthropic.com');
+        localStorage.setItem('elevenlabs_key', data.elevenlabs_key || '');
+        localStorage.setItem('voice_id', data.voice_id || 'x7tNCivOKFAydss7fglA');
+        localStorage.setItem('response_language', data.response_language || 'auto');
+        localStorage.setItem('elevenlabs_model', data.elevenlabs_model || 'eleven_multilingual_v2');
+        localStorage.setItem('translate_enable', data.translate_enabled ? 'true' : 'false');
+        localStorage.setItem('translate_target', data.translate_target || 'Chinese');
+        localStorage.setItem('ui_theme', data.ui_theme || 'dark');
+        localStorage.setItem('is_muted', data.is_muted ? 'true' : 'false');
+        
+        // Set setting input values
+        document.getElementById('anthropic-key').value = data.anthropic_key || '';
+        document.getElementById('anthropic-base').value = data.anthropic_base || 'https://api.anthropic.com';
+        document.getElementById('elevenlabs-key').value = data.elevenlabs_key || '';
+        
+        const modelSelect = document.getElementById('chat-model');
+        if (modelSelect) modelSelect.value = data.chat_model || 'claude-3-5-haiku-20241022';
+        setCustomSelectValue('chat-model-dropdown', data.chat_model || 'claude-3-5-haiku-20241022');
+        
+        setCustomSelectValue('response-language-dropdown', data.response_language || 'auto');
+        setCustomSelectValue('elevenlabs-model-dropdown', data.elevenlabs_model || 'eleven_multilingual_v2');
+        
+        const transSwitch = document.getElementById('translate-enable-switch');
+        const transInput = document.getElementById('translate-enable');
+        if (transSwitch && transInput) {
+          transInput.value = data.translate_enabled ? 'true' : 'false';
+          if (data.translate_enabled) {
+            transSwitch.classList.add('active');
+          } else {
+            transSwitch.classList.remove('active');
+          }
+        }
+        setCustomSelectValue('translate-target-dropdown', data.translate_target || 'Chinese');
+        
+        const transTargetWrapper = document.getElementById('translate-target-wrapper');
+        if (transTargetWrapper) {
+          transTargetWrapper.style.display = data.translate_enabled ? 'block' : 'none';
+        }
+        
+        // Restore theme
+        setTheme(data.ui_theme || 'dark');
+        
+        // Restore mute state
+        isMuted = data.is_muted;
+        updateMuteUI();
+        
+        // Restore sessions list
+        if (data.sessions && data.sessions.length > 0) {
+          sessions = data.sessions.map(s => ({
+            id: s.id,
+            title: s.title,
+            messages: JSON.parse(s.messages || '[]')
+          }));
+          
+          const savedActiveId = localStorage.getItem('active_session_id');
+          activeSessionId = (savedActiveId && sessions.some(s => s.id === savedActiveId)) ? savedActiveId : sessions[0].id;
+          loadSession(activeSessionId);
+        } else {
+          sessions = [];
+          createNewSession(true);
+        }
+        
+        renderSessionsList();
+        loadVoicesList();
+        updateHUDModelInfo();
+        
+      } catch (err) {
+        console.error(err);
+        showToast('无法从服务器加载数据，使用本地缓存', 3000);
+      }
     }
 
     // Toast Alert Notification Banner
@@ -3140,6 +3468,7 @@
       isMuted = !isMuted;
       localStorage.setItem('is_muted', isMuted);
       updateMuteUI();
+      syncSaveToServer();
       
       if (isMuted && currentAudio) {
         currentAudio.pause();
@@ -3312,7 +3641,8 @@
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({
             message: text,
