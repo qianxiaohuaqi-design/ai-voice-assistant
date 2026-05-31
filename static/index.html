@@ -2349,9 +2349,39 @@
       // Clock timer removed (replaced with thinking time telemetries)
 
       // Check if API keys are set, if not pop up the settings modal automatically
-      if (!localStorage.getItem('anthropic_key') || !localStorage.getItem('elevenlabs_key')) {
-        setTimeout(openModal, 800);
-      }
+      // Fetch server key configuration status first
+      fetch('/api/config')
+        .then(response => response.json())
+        .then(config => {
+          window.serverConfig = config;
+          
+          const anthropicKeyInput = document.getElementById('anthropic-key');
+          const elevenLabsKeyInput = document.getElementById('elevenlabs-key');
+          const anthropicBaseInput = document.getElementById('anthropic-base');
+
+          if (config.has_anthropic_key) {
+            anthropicKeyInput.placeholder = "已在服务器端配置默认 Key (可在此输入自定义 Key 覆盖)";
+          }
+          if (config.has_elevenlabs_key) {
+            elevenLabsKeyInput.placeholder = "已在服务器端配置默认 Key (可在此输入自定义 Key 覆盖)";
+          }
+          if (config.default_anthropic_base && !localStorage.getItem('anthropic_base')) {
+            anthropicBaseInput.value = config.default_anthropic_base;
+          }
+
+          const hasAnthropic = localStorage.getItem('anthropic_key') || config.has_anthropic_key;
+          const hasElevenLabs = localStorage.getItem('elevenlabs_key') || config.has_elevenlabs_key;
+          if (!hasAnthropic || !hasElevenLabs) {
+            setTimeout(openModal, 800);
+          }
+        })
+        .catch(err => {
+          console.error("Failed to fetch server config:", err);
+          // Fallback to local storage check only
+          if (!localStorage.getItem('anthropic_key') || !localStorage.getItem('elevenlabs_key')) {
+            setTimeout(openModal, 800);
+          }
+        });
 
       // Initialize all custom selects
       initCustomSelect('chat-model-dropdown', (val) => {
@@ -3241,7 +3271,11 @@
       const transEnable = localStorage.getItem('translate_enable') === 'true';
       const transTarget = localStorage.getItem('translate_target') || 'Chinese';
 
-      if (!aKey || !eKey) {
+      const serverConfig = window.serverConfig || { has_anthropic_key: false, has_elevenlabs_key: false };
+      const hasAnthropic = aKey || serverConfig.has_anthropic_key;
+      const hasElevenLabs = eKey || serverConfig.has_elevenlabs_key;
+
+      if (!hasAnthropic || !hasElevenLabs) {
         openModal();
         showToast('请先配置您的 API Key！', 3000);
         return;

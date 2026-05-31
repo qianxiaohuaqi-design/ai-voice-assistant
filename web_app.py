@@ -49,6 +49,15 @@ def get_index():
         status_code=404
     )
 
+@app.get("/api/config")
+def get_config_endpoint():
+    """Returns whether the server has API keys configured in environment variables."""
+    return {
+        "has_anthropic_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "has_elevenlabs_key": bool(os.environ.get("ELEVENLABS_API_KEY")),
+        "default_anthropic_base": os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
+    }
+
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     """
