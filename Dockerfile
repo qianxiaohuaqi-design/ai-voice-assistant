@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application source files
 COPY web_app.py /app/
+COPY models.py /app/
 COPY static/ /app/static/
 
 # Expose the application port
