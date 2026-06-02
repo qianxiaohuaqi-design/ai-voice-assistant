@@ -2424,42 +2424,12 @@
       isMuted = localStorage.getItem('is_muted') === 'true';
       updateMuteUI();
 
-      // Clock timer removed (replaced with thinking time telemetries)
-
-      // Check if API keys are set, if not pop up the settings modal automatically
-      // Fetch server key configuration status first
-      fetch('/api/config')
-        .then(response => response.json())
-        .then(config => {
-          window.serverConfig = config;
-          
-          const anthropicKeyInput = document.getElementById('anthropic-key');
-          const elevenLabsKeyInput = document.getElementById('elevenlabs-key');
-          const anthropicBaseInput = document.getElementById('anthropic-base');
-
-          if (config.has_anthropic_key) {
-            anthropicKeyInput.placeholder = "已在服务器端配置默认 Key (可在此输入自定义 Key 覆盖)";
-          }
-          if (config.has_elevenlabs_key) {
-            elevenLabsKeyInput.placeholder = "已在服务器端配置默认 Key (可在此输入自定义 Key 覆盖)";
-          }
-          if (config.default_anthropic_base && !localStorage.getItem('anthropic_base')) {
-            anthropicBaseInput.value = config.default_anthropic_base;
-          }
-
-          const hasAnthropic = localStorage.getItem('anthropic_key') || config.has_anthropic_key;
-          const hasElevenLabs = localStorage.getItem('elevenlabs_key') || config.has_elevenlabs_key;
-          if (!hasAnthropic || !hasElevenLabs) {
-            setTimeout(openModal, 800);
-          }
-        })
-        .catch(err => {
-          console.error("Failed to fetch server config:", err);
-          // Fallback to local storage check only
-          if (!localStorage.getItem('anthropic_key') || !localStorage.getItem('elevenlabs_key')) {
-            setTimeout(openModal, 800);
-          }
-        });
+      // Check authentication status
+      if (!authToken) {
+        document.getElementById('auth-overlay').classList.add('active');
+      } else {
+        syncLoadFromServer();
+      }
 
       // Initialize all custom selects
       initCustomSelect('chat-model-dropdown', (val) => {
@@ -3355,6 +3325,13 @@
           if (config.default_anthropic_base && !localStorage.getItem('anthropic_base')) {
             anthropicBaseInput.value = config.default_anthropic_base;
           }
+
+          // Automatically pop up settings modal if keys are missing
+          const hasAnthropic = localStorage.getItem('anthropic_key') || config.has_anthropic_key;
+          const hasElevenLabs = localStorage.getItem('elevenlabs_key') || config.has_elevenlabs_key;
+          if (!hasAnthropic || !hasElevenLabs) {
+            setTimeout(openModal, 800);
+          }
         })
         .catch(err => console.error("Failed to fetch server config:", err));
 
@@ -3450,6 +3427,30 @@
       } catch (err) {
         console.error(err);
         showToast('无法从服务器加载数据，使用本地缓存', 3000);
+        
+        // Fallback to local storage
+        const savedSessions = localStorage.getItem('chat_sessions');
+        if (savedSessions) {
+          try {
+            sessions = JSON.parse(savedSessions);
+            const savedActiveId = localStorage.getItem('active_session_id');
+            activeSessionId = (savedActiveId && sessions.some(s => s.id === savedActiveId)) ? savedActiveId : (sessions[0] ? sessions[0].id : null);
+            if (activeSessionId) {
+              loadSession(activeSessionId);
+            } else {
+              createNewSession(true);
+            }
+          } catch (e) {
+            sessions = [];
+            createNewSession(true);
+          }
+        } else {
+          sessions = [];
+          createNewSession(true);
+        }
+        renderSessionsList();
+        loadVoicesList();
+        updateHUDModelInfo();
       }
     }
 
