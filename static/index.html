@@ -1124,7 +1124,7 @@
       opacity: 0.95;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
       text-align: center;
-      transition: opacity 500ms ease, filter 500ms ease;
+      transition: opacity 300ms ease, filter 300ms ease;
       filter: blur(0);
       opacity: 1;
     }
@@ -1132,15 +1132,15 @@
       text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8);
     }
 
-    /* Subtitle animation states */
+    /* Subtitle animation states: Fade in place with soft blur */
     #orb-subtitle.fading-in {
       opacity: 0;
-      filter: blur(6px);
+      filter: blur(4px);
     }
 
     #orb-subtitle.fading-out {
       opacity: 0;
-      filter: blur(6px);
+      filter: blur(4px);
     }
 
     /* English line styling: clean sans-serif large */
@@ -1320,6 +1320,21 @@
       }
       #orb-subtitle .translation-line {
         font-size: 0.8rem;
+      }
+      
+      /* Mobile modal button display fixes */
+      .modal-sheet {
+        padding: 20px 16px calc(16px + env(safe-area-inset-bottom)) !important;
+        max-height: 90dvh !important;
+        max-height: 90vh !important;
+      }
+      .modal-footer {
+        padding-top: 12px !important;
+        padding-bottom: 4px !important;
+      }
+      .save-btn {
+        padding: 11px 16px !important;
+        font-size: 0.9rem !important;
       }
     }
 
@@ -1598,6 +1613,146 @@
     }
     .switch-container.active .switch-toggle::after {
       transform: translateX(20px);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    body.light-theme ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+    }
+    body.light-theme ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    /* Help Modal and Tabs styling */
+    .help-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+    .help-tab-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Outfit', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .help-tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(124, 58, 237, 0.3);
+    }
+    body.light-theme .help-tab-btn {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+    body.light-theme .help-tab-btn:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+    .help-tab-btn.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+    body.light-theme .help-tab-btn.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+    }
+    .help-tab-content {
+      display: none;
+    }
+    .help-tab-content.active {
+      display: block;
+    }
+
+    /* Guide Section and Cards */
+    .guide-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 4px;
+    }
+    .guide-card {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+    .guide-card:hover {
+      border-color: rgba(124, 58, 237, 0.3);
+      background: rgba(255, 255, 255, 0.035);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      transform: translateY(-2px);
+    }
+    body.light-theme .guide-card {
+      background: rgba(255, 255, 255, 0.7);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    }
+    body.light-theme .guide-card:hover {
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+    }
+    .guide-card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Outfit', sans-serif;
+    }
+    .guide-card-body {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    .guide-card-body p {
+      margin: 0 0 10px 0;
+    }
+    .guide-card-body p:last-child {
+      margin-bottom: 0;
+    }
+    .guide-card-body ul {
+      margin: 8px 0 0 0;
+      padding-left: 20px;
+    }
+    .guide-card-body li {
+      margin-bottom: 10px;
+    }
+    .guide-card-body li:last-child {
+      margin-bottom: 0;
+    }
+    .guide-card-body strong {
+      color: var(--text-main);
     }
 
     /* Help Modal and Table styling */
@@ -2078,9 +2233,9 @@
             <div class="guide-card">
               <div class="guide-card-title">🔑 1. 如何配置 API Key 才能开始？</div>
               <div class="guide-card-body">
-                <p>点击左下角侧边栏的 <strong>“系统设置”</strong> 按钮，拉到最底部的<strong>“开发者 API 配置”</strong>：</p>
+                <p>点击左下角侧边栏的 <strong>“系统设置”</strong> 按钮，拉到最底部的 <strong>“开发者 API 配置”</strong>：</p>
                 <ul>
-                  <li><strong>Claude Key</strong>: 填写您的 Anthropic API Key。若使用代理或中转接口（例如 OhMyGPT），可在下方填写自定义的代理地址 (Base URL)。</li>
+                  <li><strong>AI 大模型 Key</strong>: 填写您的 API Key。本助手不限制模型渠道，全面支持 DeepSeek, OpenAI, Claude, Gemini, Grok 等各种大模型或第三方中转接口的 API Key。若使用代理或中转接口（例如 OhMyGPT），可配合在下方填写自定义的代理地址 (Base URL)。</li>
                   <li><strong>ElevenLabs Key</strong>: 填写您的语音合成 API Key，用于生成精美的音色。</li>
                 </ul>
               </div>
@@ -2089,10 +2244,10 @@
             <div class="guide-card">
               <div class="guide-card-title">🎙️ 2. 怎么添加和切换语音声音？</div>
               <div class="guide-card-body">
-                <p>点击 <strong>“系统设置”</strong>，在中间的<strong>“声音库管理”</strong>卡片中：</p>
+                <p>点击左下角侧边栏的 <strong>“系统设置”</strong>，在中间的 <strong>“声音库管理”</strong> 卡片中：</p>
                 <ul>
-                  <li>在输入框中填入<strong>声音名称</strong>和您在 ElevenLabs 官方克隆/获取的 <strong>Voice ID</strong>。</li>
-                  <li>点击“添加新声音”后，即可在卡片上方的<strong>“选择语音声音”</strong>下拉菜单中一键切换！</li>
+                  <li>在输入框中填入<strong>自定义声音名称</strong>以及您在 ElevenLabs 官方后台克隆或获取的 <strong>Voice ID</strong>。</li>
+                  <li>点击 <strong>“添加新声音”</strong> 成功后，即可在上方 <strong>“选择语音声音”</strong> 下拉菜单中一键切换！</li>
                 </ul>
               </div>
             </div>
@@ -2101,8 +2256,8 @@
               <div class="guide-card-title">🛡️ 3. 右上角按键功能与省额度秘籍</div>
               <div class="guide-card-body">
                 <ul>
-                  <li><strong>语音/静音按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>)</strong>: 一键开启/关闭语音。当切换为<strong>“纯文字模式”</strong>时，后端会直接跳过 ElevenLabs 语音合成接口，发送请求时不消耗 ElevenLabs 额度，特别适合快速测试或纯打字时使用。</li>
-                  <li><strong>星云按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0"></path></svg>)</strong>: 一键在<strong>“传统聊天面板”</strong>和<strong>“3D 粒子星云球”</strong>间切换。在星云模式下，AI 回复会在球体下方以柔和的<strong>“原地浮现”</strong>动态字幕展示，更具未来感。</li>
+                  <li><strong>语音/静音按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>)</strong>: 一键开启/关闭语音。当切换为<strong>“纯文字模式”</strong>时，后端会直接跳过 ElevenLabs 语音合成接口，发送请求时不消耗 ElevenLabs 额度，非常适合打字或测试时使用。</li>
+                  <li><strong>星云按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0"></path></svg>)</strong>: 一键在<strong>“传统聊天面板”</strong>和<strong>“3D 粒子星云球”</strong>间切换。在星云模式下，AI 回复会以柔和的<strong>“原地浮现”</strong>动态字幕展示，并且字随音走，未来科技感十足。</li>
                 </ul>
               </div>
             </div>
@@ -2369,13 +2524,13 @@
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; font-family: 'Outfit', sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">开发者 API 配置</div>
           
           <div class="form-group">
-            <label class="form-label" for="anthropic-key">ANTHROPIC (CLAUDE) API KEY</label>
-            <input type="password" class="form-input" id="anthropic-key" placeholder="sk-ant-api03-...">
+            <label class="form-label" for="anthropic-key">AI 大模型 API KEY</label>
+            <input type="password" class="form-input" id="anthropic-key" placeholder="填入您的大模型 API Key (支持 DeepSeek/OpenAI/Claude 等)">
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="anthropic-base">ANTHROPIC API BASE URL (代理/中转接口地址)</label>
-            <input type="text" class="form-input" id="anthropic-base" placeholder="默认官方: https://api.anthropic.com">
+            <label class="form-label" for="anthropic-base">API BASE URL (自定义中转/代理接口地址)</label>
+            <input type="text" class="form-input" id="anthropic-base" placeholder="如使用代理/中转接口请在此填写，官方直连请留空">
           </div>
           
           <div class="form-group">
@@ -2671,7 +2826,7 @@
           const statusText = document.getElementById('tech-status-text');
           const isIdle = !statusText || statusText.innerText === 'idle';
           if (!isIdle || (currentAudio && !currentAudio.paused)) {
-            typewriteSubtitle(lastMsg.content);
+            typewriteSubtitle(lastMsg.content, currentAudio && !currentAudio.paused);
           }
         }
       }
@@ -3716,7 +3871,7 @@
 
         if (currentViewMode === 'orb') {
           stopThinkingAnimation();
-          typewriteSubtitle(data.text);
+          typewriteSubtitle(data.text, !isMuted && data.audio);
         }
 
         chatHistory.push({ role: 'assistant', content: data.text });
@@ -3779,6 +3934,7 @@
     let subtitleTimer = null; // fallback timer for no-audio playback
     let lastRenderedIndex = -1;
     let lastRenderedState = '';
+    let isTransitioningSubtitle = false;
 
     function setOrbSubtitleSimple(text) {
       const subtitleEl = document.getElementById('orb-subtitle');
@@ -3796,7 +3952,7 @@
       subtitleEl.className = '';
     }
 
-    function typewriteSubtitle(text) {
+    function typewriteSubtitle(text, willPlayAudio = false) {
       const subtitleEl = document.getElementById('orb-subtitle');
       if (!subtitleEl) return;
 
@@ -3812,6 +3968,9 @@
       activeSentenceIndex = -1;
       lastRenderedIndex = -1;
       lastRenderedState = '';
+      if (typeof isTransitioningSubtitle !== 'undefined') {
+        isTransitioningSubtitle = false;
+      }
 
       if (text === 'Thinking...' || text === '') {
         subtitleEl.innerHTML = '';
@@ -3833,10 +3992,9 @@
         return;
       }
 
-      // If audio is playing and not paused, updateSubtitleSync will handle rendering
-      if (currentAudio && !currentAudio.paused && currentAudio.duration > 0) {
-        calculateSentenceTimes(currentAudio.duration);
-        updateSubtitleSync(currentAudio.currentTime, currentAudio.duration);
+      if (willPlayAudio) {
+        // Just show the first sentence statically, audio timeupdate will handle transitions
+        showSentenceDirect(0);
       } else {
         // Fallback: use the timer
         startFallbackSubtitleTimer();
@@ -3899,10 +4057,11 @@
     function calculateSentenceTimes(duration) {
       if (!duration || !Number.isFinite(duration) || duration <= 0) return;
       
-      const totalLen = currentSentences.reduce((acc, s) => acc + s.text.length + (s.translation ? s.translation.length : 0), 0);
+      // Spoken text is s.text (translation is visual and not spoken, so it is excluded from length-based timing)
+      const totalLen = currentSentences.reduce((acc, s) => acc + s.text.length, 0);
       let elapsed = 0;
       currentSentenceTimes = currentSentences.map(s => {
-        const sLen = s.text.length + (s.translation ? s.translation.length : 0);
+        const sLen = s.text.length;
         const percent = totalLen > 0 ? (sLen / totalLen) : (1 / currentSentences.length);
         const sDuration = duration * percent;
         const start = elapsed;
@@ -3913,10 +4072,9 @@
     }
 
     function updateSubtitleSync(currentTime, duration) {
-      if (!currentSentences || currentSentences.length === 0) return;
+      if (!currentSentences || currentSentences.length === 0 || isTransitioningSubtitle) return;
       
       if (Number.isFinite(duration) && duration > 0) {
-        // Recalculate if sentence times are not computed yet, or if they were computed for a different duration
         const needsCalculation = currentSentenceTimes.length === 0 || 
                                  Math.abs(currentSentenceTimes[currentSentenceTimes.length - 1].end - duration) > 0.05;
         if (needsCalculation) {
@@ -3925,8 +4083,7 @@
       }
       
       if (currentSentenceTimes.length === 0) {
-        // Fallback: if duration is not loaded yet, just show the first sentence
-        showSentence(0, 'stable');
+        showSentenceDirect(0);
         return;
       }
       
@@ -3941,68 +4098,70 @@
       }
       
       if (index >= currentSentences.length) {
-        // Finished all sentences, clear with fade-out if not already done
+        // Finished all sentences, clear with fade-out
         const subtitleEl = document.getElementById('orb-subtitle');
-        if (subtitleEl && !subtitleEl.classList.contains('fading-out')) {
+        if (subtitleEl && lastRenderedIndex !== -2) {
+          lastRenderedIndex = -2;
           subtitleEl.className = 'fading-out';
           setTimeout(() => {
             subtitleEl.innerHTML = '';
             subtitleEl.className = '';
-          }, 500);
+          }, 300);
         }
         return;
       }
       
-      const timeRange = currentSentenceTimes[index];
-      const sDuration = timeRange.end - timeRange.start;
-      const fadeWindow = Math.min(0.4, sDuration / 2);
-      
-      let state = 'stable'; // 'fading-in', 'fading-out', or 'stable'
-      if (currentTime - timeRange.start < fadeWindow) {
-        state = 'fading-in';
-      } else if (timeRange.end - currentTime < fadeWindow) {
-        state = 'fading-out';
+      if (lastRenderedIndex !== index) {
+        const prevIndex = lastRenderedIndex;
+        lastRenderedIndex = index;
+        
+        const subtitleEl = document.getElementById('orb-subtitle');
+        if (!subtitleEl) return;
+        
+        const s = currentSentences[index];
+        if (!s) return;
+        
+        if (prevIndex !== -1 && prevIndex !== -2) {
+          // Fade out first, then fade in the new one
+          isTransitioningSubtitle = true;
+          subtitleEl.className = 'fading-out';
+          setTimeout(() => {
+            subtitleEl.innerHTML = `
+              <span class="english-line">${escapeHTML(s.text)}</span>
+              ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
+            `;
+            subtitleEl.className = 'fading-in';
+            void subtitleEl.offsetWidth; // Force reflow
+            subtitleEl.className = '';
+            isTransitioningSubtitle = false;
+          }, 300);
+        } else {
+          // Direct fade-in for the first sentence
+          subtitleEl.innerHTML = `
+            <span class="english-line">${escapeHTML(s.text)}</span>
+            ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
+          `;
+          subtitleEl.className = 'fading-in';
+          void subtitleEl.offsetWidth; // Force reflow
+          subtitleEl.className = '';
+        }
       }
-      
-      showSentence(index, state);
     }
 
-    function showSentence(index, state) {
+    function showSentenceDirect(index) {
       const subtitleEl = document.getElementById('orb-subtitle');
       if (!subtitleEl) return;
-      
-      if (lastRenderedIndex === index && lastRenderedState === state) {
-        return;
-      }
-      
       const s = currentSentences[index];
       if (!s) return;
       
+      if (lastRenderedIndex === index) return;
       lastRenderedIndex = index;
-      lastRenderedState = state;
       
-      if (state === 'fading-in') {
-        subtitleEl.className = 'fading-in';
-        subtitleEl.innerHTML = `
-          <span class="english-line">${escapeHTML(s.text)}</span>
-          ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
-        `;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (lastRenderedState === 'fading-in' && lastRenderedIndex === index) {
-              subtitleEl.className = '';
-            }
-          });
-        });
-      } else if (state === 'fading-out') {
-        subtitleEl.className = 'fading-out';
-      } else {
-        subtitleEl.className = '';
-        subtitleEl.innerHTML = `
-          <span class="english-line">${escapeHTML(s.text)}</span>
-          ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
-        `;
-      }
+      subtitleEl.innerHTML = `
+        <span class="english-line">${escapeHTML(s.text)}</span>
+        ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
+      `;
+      subtitleEl.className = '';
     }
 
     function startFallbackSubtitleTimer() {
@@ -4018,7 +4177,7 @@
             setTimeout(() => {
               subtitleEl.innerHTML = '';
               subtitleEl.className = '';
-            }, 500);
+            }, 300);
           }
           return;
         }
@@ -4029,7 +4188,7 @@
             subtitleEl.className = 'fading-out';
             setTimeout(() => {
               showSentenceFallback(index);
-            }, 500);
+            }, 300);
           } else {
             showSentenceFallback(index);
           }
@@ -4046,12 +4205,8 @@
           ${s.translation ? `<span class="translation-line">${escapeHTML(s.translation)}</span>` : ''}
         `;
         subtitleEl.className = 'fading-in';
-        
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            subtitleEl.className = '';
-          });
-        });
+        void subtitleEl.offsetWidth; // Force reflow
+        subtitleEl.className = '';
         
         const charCount = s.text.length + (s.translation ? s.translation.length : 0);
         const delay = Math.min(7000, 2500 + charCount * 80);
@@ -4647,8 +4802,17 @@
       audio.pause();
       audio.src = base64Audio;
       
-      // Reset sentence times so they are recalculated for this new audio
+      // Clear fallback timer immediately
+      if (subtitleTimer) {
+        clearTimeout(subtitleTimer);
+        subtitleTimer = null;
+      }
+
+      // Reset sentence times and indexing so they are recalculated for this new audio
       currentSentenceTimes = [];
+      activeSentenceIndex = -1;
+      lastRenderedIndex = -1;
+      lastRenderedState = '';
       
       stopAllWaveforms();
       stopOrbAnimation();

@@ -177,7 +177,7 @@ def sync_load(authorization: Optional[str] = Header(None), db: Session = Depends
         "anthropic_base": user.anthropic_base or "https://api.anthropic.com",
         "elevenlabs_key": user.elevenlabs_key or "",
         "voice_id": user.voice_id or "x7tNCivOKFAydss7fglA",
-        "chat_model": user.chat_model or "claude-3-5-haiku-20241022",
+        "chat_model": user.chat_model or "deepseek-chat",
         "response_language": user.response_language or "auto",
         "elevenlabs_model": user.elevenlabs_model or "eleven_multilingual_v2",
         "translate_enabled": user.translate_enabled or False,
@@ -259,7 +259,7 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     voice_id = request.voice_id or user.voice_id or os.environ.get("VOICE_ID") or "x7tNCivOKFAydss7fglA"
     
     # Resolve Model (request body > user settings > default Haiku)
-    model = request.model or user.chat_model or "claude-3-5-haiku-20241022"
+    model = request.model or user.chat_model or "deepseek-chat"
     
     # Resolve ElevenLabs Model (request body > user settings > default)
     elevenlabs_model = request.elevenlabs_model or user.elevenlabs_model or "eleven_multilingual_v2"
@@ -272,9 +272,9 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     tts_enabled = request.tts_enabled if request.tts_enabled is not None else True
 
     if not anthropic_key:
-        raise HTTPException(status_code=400, detail="Missing Anthropic API Key. Please provide it in settings.")
+        raise HTTPException(status_code=400, detail="检测到未配置 AI 大模型 API Key。请先点击左下角【系统设置】进行配置。")
     if tts_enabled and not elevenlabs_key:
-        raise HTTPException(status_code=400, detail="Missing ElevenLabs API Key. Please provide it in settings.")
+        raise HTTPException(status_code=400, detail="检测到未配置 ElevenLabs 语音合成 Key。请先点击左下角【系统设置】进行配置。")
 
 
 
