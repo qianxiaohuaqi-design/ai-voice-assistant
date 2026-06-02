@@ -2056,145 +2056,172 @@
   <div class="modal-overlay" id="help-modal" onclick="closeHelpModalOnOuterClick(event)">
     <div class="modal-sheet" style="max-height: 80vh;">
       <div class="modal-header">
-        <div class="modal-title">🤖 模型资费与功能指南</div>
-        <button class="icon-btn      <div class="modal-body">
-        <div style="overflow-x: auto; margin-bottom: 20px;">
-          <table class="help-table">
-            <thead>
-              <tr>
-                <th>模型名称</th>
-                <th>分类</th>
-                <th>消耗评级</th>
-                <th>功能与特长</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- DeepSeek 系列 -->
-              <tr class="table-group-row">
-                <td colspan="4">DeepSeek 系列模型</td>
-              </tr>
-              <tr>
-                <td><strong>DeepSeek Chat</strong></td>
-                <td><span class="badge badge-cheap">性价比推荐</span></td>
-                <td><span class="badge badge-cheap">极低 (约0.007元/万字)</span></td>
-                <td>中文对话、日常问答、长文润色与快速翻译，价格超划算，国内首选。</td>
-              </tr>
-              <tr>
-                <td><strong>DeepSeek Reasoner</strong></td>
-                <td><span class="badge badge-reasoning">深度推理 (R1)</span></td>
-                <td><span class="badge badge-cheap">极低 (约0.04元/万字)</span></td>
-                <td>DeepSeek-R1 推理模型，解决数理逻辑、复杂编码与长考难题，带思维链。</td>
-              </tr>
-              
-              <!-- OpenAI GPT 系列 -->
-              <tr class="table-group-row">
-                <td colspan="4">OpenAI GPT 系列模型</td>
-              </tr>
-              <tr>
-                <td><strong>GPT-4o Mini</strong></td>
-                <td><span class="badge badge-cheap">性价比推荐</span></td>
-                <td><span class="badge badge-cheap">极低 (约0.01元/万字)</span></td>
-                <td>OpenAI 官方最轻量且实惠的模型。速度极快，适合日常快捷聊天和纠错。</td>
-              </tr>
-              <tr>
-                <td><strong>o3-mini</strong></td>
-                <td><span class="badge badge-reasoning">深度推理</span></td>
-                <td><span class="badge badge-mid">中等 (约0.1元/万字)</span></td>
-                <td>OpenAI 极速推理模型，支持推理思考。擅长理科推导与高难度代码重构。</td>
-              </tr>
-              <tr>
-                <td><strong>GPT-4o</strong></td>
-                <td><span class="badge badge-flagship">旗舰主力</span></td>
-                <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
-                <td>OpenAI 全能王牌旗舰，综合推理、中英双语、各行业任务处理高度均衡稳定。</td>
-              </tr>
-              
-              <!-- Anthropic Claude 系列 -->
-              <tr class="table-group-row">
-                <td colspan="4">Anthropic Claude 系列模型</td>
-              </tr>
-              <tr>
-                <td><strong>Claude 3.5 Haiku</strong></td>
-                <td><span class="badge badge-cheap">性价比推荐</span></td>
-                <td><span class="badge badge-mid">中等 (约0.07元/万字)</span></td>
-                <td>Anthropic 极速模型。擅长精细格式输出与高水平翻译，比 Sonnet 省钱。</td>
-              </tr>
-              <tr>
-                <td><strong>Claude 3.7 Sonnet</strong></td>
-                <td><span class="badge badge-flagship">旗舰主力</span></td>
-                <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
-                <td>当前综合实力天花板。代码编写、深度分析和文学写作极佳，可选思维链。</td>
-              </tr>
-              <tr>
-                <td><strong>Claude Opus 4.0</strong></td>
-                <td><span class="badge badge-flagship">旗舰主力</span></td>
-                <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
-                <td>中转特供重制版，回复逻辑极强，擅长高度复杂的学术分析及决策建议。</td>
-              </tr>
-              
-              <!-- Google Gemini 系列 -->
-              <tr class="table-group-row">
-                <td colspan="4">Google Gemini 系列模型</td>
-              </tr>
-              <tr>
-                <td><strong>Gemini 3.5 Flash</strong></td>
-                <td><span class="badge badge-cheap">性价比推荐</span></td>
-                <td><span class="badge badge-cheap">极低 (约0.005元/万字)</span></td>
-                <td>Google 最新一代超快速且极低成本模型，长文本处理和多模态交互好。</td>
-              </tr>
-              <tr>
-                <td><strong>Gemini 2.5 Pro</strong></td>
-                <td><span class="badge badge-flagship">旗舰主力</span></td>
-                <td><span class="badge badge-mid">中等 (约0.15元/万字)</span></td>
-                <td>Google 经典高智商专业模型。极长上下文语义提取和长文档分析能力极佳。</td>
-              </tr>
-              
-              <!-- xAI Grok 系列 -->
-              <tr class="table-group-row">
-                <td colspan="4">xAI Grok 系列模型</td>
-              </tr>
-              <tr>
-                <td><strong>Grok 4.2 Fast</strong></td>
-                <td><span class="badge badge-flagship">旗舰主力</span></td>
-                <td><span class="badge badge-mid">中等 (约0.08元/万字)</span></td>
-                <td>xAI 最新极速版旗舰，包含实时网络搜索，性格直爽率真，回复效率高。</td>
-              </tr>
-              <tr>
-                <td><strong>Grok 4.2 Reasoning</strong></td>
-                <td><span class="badge badge-reasoning">深度推理</span></td>
-                <td><span class="badge badge-expensive">偏高 (约0.3元/万字)</span></td>
-                <td>xAI 深度推理旗舰，专门解决数理逻辑攻坚，思考推导十分严密。</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="modal-title">🤖 智能语音助手说明书</div>
+        <button class="icon-btn" onclick="closeHelpModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Tab Navigation Header -->
+        <div class="help-tabs">
+          <button class="help-tab-btn active" onclick="switchHelpTab(event, 'guide')">📖 基础使用指南</button>
+          <button class="help-tab-btn" onclick="switchHelpTab(event, 'tariffs')">💰 模型资费与功能</button>
         </div>
-      </div>态交互好。</td>
-            </tr>
-            <tr>
-              <td><strong>Gemini 2.5 Pro</strong></td>
-              <td><span class="badge badge-flagship">旗舰主力</span></td>
-              <td><span class="badge badge-mid">中等 (约0.15元/万字)</span></td>
-              <td>Google 经典高智商专业模型。极长上下文语义提取和长文档分析能力极佳。</td>
-            </tr>
+
+        <!-- TAB 1: Basic Usage Guide -->
+        <div class="help-tab-content active" id="help-tab-guide">
+          <div class="guide-section">
+            <div class="guide-card">
+              <div class="guide-card-title">🔑 1. 如何配置 API Key 才能开始？</div>
+              <div class="guide-card-body">
+                <p>点击左下角侧边栏的 <strong>“系统设置”</strong> 按钮，拉到最底部的<strong>“开发者 API 配置”</strong>：</p>
+                <ul>
+                  <li><strong>Claude Key</strong>: 填写您的 Anthropic API Key。若使用代理或中转接口（例如 OhMyGPT），可在下方填写自定义的代理地址 (Base URL)。</li>
+                  <li><strong>ElevenLabs Key</strong>: 填写您的语音合成 API Key，用于生成精美的音色。</li>
+                </ul>
+              </div>
+            </div>
             
-            <!-- xAI Grok 系列 -->
-            <tr class="table-group-row">
-              <td colspan="4">xAI Grok 系列模型</td>
-            </tr>
-            <tr>
-              <td><strong>Grok 4.2 Fast</strong></td>
-              <td><span class="badge badge-flagship">旗舰主力</span></td>
-              <td><span class="badge badge-mid">中等 (约0.08元/万字)</span></td>
-              <td>xAI 最新极速版旗舰，包含实时网络搜索，性格直爽率真，回复效率高。</td>
-            </tr>
-            <tr>
-              <td><strong>Grok 4.2 Reasoning</strong></td>
-              <td><span class="badge badge-reasoning">深度推理</span></td>
-              <td><span class="badge badge-expensive">偏高 (约0.3元/万字)</span></td>
-              <td>xAI 深度推理旗舰，专门解决数理逻辑攻坚，思考推导十分严密。</td>
-            </tr>
-          </tbody>
-        </table>
+            <div class="guide-card">
+              <div class="guide-card-title">🎙️ 2. 怎么添加和切换语音声音？</div>
+              <div class="guide-card-body">
+                <p>点击 <strong>“系统设置”</strong>，在中间的<strong>“声音库管理”</strong>卡片中：</p>
+                <ul>
+                  <li>在输入框中填入<strong>声音名称</strong>和您在 ElevenLabs 官方克隆/获取的 <strong>Voice ID</strong>。</li>
+                  <li>点击“添加新声音”后，即可在卡片上方的<strong>“选择语音声音”</strong>下拉菜单中一键切换！</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="guide-card">
+              <div class="guide-card-title">🛡️ 3. 右上角按键功能与省额度秘籍</div>
+              <div class="guide-card-body">
+                <ul>
+                  <li><strong>语音/静音按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>)</strong>: 一键开启/关闭语音。当切换为<strong>“纯文字模式”</strong>时，后端会直接跳过 ElevenLabs 语音合成接口，发送请求时不消耗 ElevenLabs 额度，特别适合快速测试或纯打字时使用。</li>
+                  <li><strong>星云按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0"></path></svg>)</strong>: 一键在<strong>“传统聊天面板”</strong>和<strong>“3D 粒子星云球”</strong>间切换。在星云模式下，AI 回复会在球体下方以柔和的<strong>“原地浮现”</strong>动态字幕展示，更具未来感。</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Model Tariffs Table -->
+        <div class="help-tab-content" id="help-tab-tariffs">
+          <div style="overflow-x: auto; margin-bottom: 20px; max-height: 52vh;">
+            <table class="help-table">
+              <thead>
+                <tr>
+                  <th>模型名称</th>
+                  <th>分类</th>
+                  <th>消耗评级</th>
+                  <th>功能与特长</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- DeepSeek 系列 -->
+                <tr class="table-group-row">
+                  <td colspan="4">DeepSeek 系列模型</td>
+                </tr>
+                <tr>
+                  <td><strong>DeepSeek Chat</strong></td>
+                  <td><span class="badge badge-cheap">性价比推荐</span></td>
+                  <td><span class="badge badge-cheap">极低 (约0.007元/万字)</span></td>
+                  <td>中文对话、日常问答、长文润色与快速翻译，价格超划算，国内首选。</td>
+                </tr>
+                <tr>
+                  <td><strong>DeepSeek Reasoner</strong></td>
+                  <td><span class="badge badge-reasoning">深度推理 (R1)</span></td>
+                  <td><span class="badge badge-cheap">极低 (约0.04元/万字)</span></td>
+                  <td>DeepSeek-R1 推理模型，解决数理逻辑、复杂编码与长考难题，带思维链。</td>
+                </tr>
+                
+                <!-- OpenAI GPT 系列 -->
+                <tr class="table-group-row">
+                  <td colspan="4">OpenAI GPT 系列模型</td>
+                </tr>
+                <tr>
+                  <td><strong>GPT-4o Mini</strong></td>
+                  <td><span class="badge badge-cheap">性价比推荐</span></td>
+                  <td><span class="badge badge-cheap">极低 (约0.01元/万字)</span></td>
+                  <td>OpenAI 官方最轻量且实惠的模型。速度极快，适合日常快捷聊天和纠错。</td>
+                </tr>
+                <tr>
+                  <td><strong>o3-mini</strong></td>
+                  <td><span class="badge badge-reasoning">深度推理</span></td>
+                  <td><span class="badge badge-mid">中等 (约0.1元/万字)</span></td>
+                  <td>OpenAI 极速推理模型，支持推理思考。擅长理科推导与高难度代码重构。</td>
+                </tr>
+                <tr>
+                  <td><strong>GPT-4o</strong></td>
+                  <td><span class="badge badge-flagship">旗舰主力</span></td>
+                  <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+                  <td>OpenAI 全能王牌旗舰，综合推理、中英双语、各行业任务处理高度均衡稳定。</td>
+                </tr>
+                
+                <!-- Anthropic Claude 系列 -->
+                <tr class="table-group-row">
+                  <td colspan="4">Anthropic Claude 系列模型</td>
+                </tr>
+                <tr>
+                  <td><strong>Claude 3.5 Haiku</strong></td>
+                  <td><span class="badge badge-cheap">性价比推荐</span></td>
+                  <td><span class="badge badge-mid">中等 (约0.07元/万字)</span></td>
+                  <td>Anthropic 极速模型。擅长精细格式输出与高水平翻译，比 Sonnet 省钱。</td>
+                </tr>
+                <tr>
+                  <td><strong>Claude 3.7 Sonnet</strong></td>
+                  <td><span class="badge badge-flagship">旗舰主力</span></td>
+                  <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+                  <td>当前综合实力天花板。代码编写、深度分析和文学写作极佳，可选思维链。</td>
+                </tr>
+                <tr>
+                  <td><strong>Claude Opus 4.0</strong></td>
+                  <td><span class="badge badge-flagship">旗舰主力</span></td>
+                  <td><span class="badge badge-expensive">偏高 (约0.35元/万字)</span></td>
+                  <td>中转特供重制版，回复逻辑极强，擅长高度复杂的学术分析及决策建议。</td>
+                </tr>
+                
+                <!-- Google Gemini 系列 -->
+                <tr class="table-group-row">
+                  <td colspan="4">Google Gemini 系列模型</td>
+                </tr>
+                <tr>
+                  <td><strong>Gemini 3.5 Flash</strong></td>
+                  <td><span class="badge badge-cheap">性价比推荐</span></td>
+                  <td><span class="badge badge-cheap">极低 (约0.005元/万字)</span></td>
+                  <td>Google 最新一代超快速且极低成本模型，长文本处理和多模态交互好。</td>
+                </tr>
+                <tr>
+                  <td><strong>Gemini 2.5 Pro</strong></td>
+                  <td><span class="badge badge-flagship">旗舰主力</span></td>
+                  <td><span class="badge badge-mid">中等 (约0.15元/万字)</span></td>
+                  <td>Google 经典高智商专业模型。极长上下文语义提取和长文档分析能力极佳。</td>
+                </tr>
+                
+                <!-- xAI Grok 系列 -->
+                <tr class="table-group-row">
+                  <td colspan="4">xAI Grok 系列模型</td>
+                </tr>
+                <tr>
+                  <td><strong>Grok 4.2 Fast</strong></td>
+                  <td><span class="badge badge-flagship">旗舰主力</span></td>
+                  <td><span class="badge badge-mid">中等 (约0.08元/万字)</span></td>
+                  <td>xAI 最新极速版旗舰，包含实时网络搜索，性格直爽率真，回复效率高.</td>
+                </tr>
+                <tr>
+                  <td><strong>Grok 4.2 Reasoning</strong></td>
+                  <td><span class="badge badge-reasoning">深度推理</span></td>
+                  <td><span class="badge badge-expensive">偏高 (约0.3元/万字)</span></td>
+                  <td>xAI 深度推理旗舰，专门解决数理逻辑攻坚，思考推导十分严密。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2615,7 +2642,7 @@
         <div class="message-row ai">
           <div class="bubble">
             <p>👋 你好！我是你的专属智能语音助手。</p>
-            <p>我已经通过 Web 端加载了您的定制语音服务。在开始前，请点击左下角侧边栏的 **“系统设置”** 按钮配置您的 API Key。</p>
+            <p>在开始前，请点击左下角侧边栏的 <strong>“系统设置”</strong> 按钮配置您的 API Key。点击右上角的喇叭图标，可以一键开启或关闭 <strong>“纯文字模式”</strong> 节省语音额度哦！</p>
           </div>
         </div>
       `;
@@ -3122,6 +3149,23 @@
       }
     }
 
+    function switchHelpTab(event, tabId) {
+      if (event) event.stopPropagation();
+      document.querySelectorAll('.help-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelectorAll('.help-tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+      }
+      
+      const targetContent = document.getElementById(`help-tab-${tabId}`);
+      if (targetContent) targetContent.classList.add('active');
+    }
+
     function toggleTranslationSwitch() {
       const transSwitch = document.getElementById('translate-enable-switch');
       const transInput = document.getElementById('translate-enable');
@@ -3471,7 +3515,7 @@
         currentAudio.pause();
         stopAllWaveforms();
       }
-      showToast(isMuted ? '已切换为纯文字模式 (不消耗语音额度)' : '已开启语音播报模式', 2500);
+      showToast(isMuted ? '已切换为纯文字模式' : '已开启语音播报模式', 2500);
     }
 
     function updateMuteUI() {
