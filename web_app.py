@@ -65,6 +65,7 @@ class ChatRequest(BaseModel):
     elevenlabs_model: Optional[str] = None
     translate_enabled: Optional[bool] = False
     translate_target: Optional[str] = "Chinese"
+    tts_enabled: Optional[bool] = True
 
 
 # Ensure the static directory exists for the frontend files
@@ -267,9 +268,12 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     anthropic_base = request.anthropic_base or user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or "https://api.anthropic.com"
     anthropic_base = anthropic_base.rstrip("/")
 
+    # Resolve TTS enabled state
+    tts_enabled = request.tts_enabled if request.tts_enabled is not None else True
+
     if not anthropic_key:
         raise HTTPException(status_code=400, detail="Missing Anthropic API Key. Please provide it in settings.")
-    if not elevenlabs_key:
+    if tts_enabled and not elevenlabs_key:
         raise HTTPException(status_code=400, detail="Missing ElevenLabs API Key. Please provide it in settings.")
 
 
@@ -402,33 +406,34 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     audio_data_uri = None
     tts_error = None
 
-    tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-    tts_headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": elevenlabs_key
-    }
-    tts_payload = {
-        "text": clean_tts_text,
-        "model_id": elevenlabs_model,
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75
+    if tts_enabled and elevenlabs_key:
+        tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+        tts_headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": elevenlabs_key
         }
-    }
+        tts_payload = {
+            "text": clean_tts_text,
+            "model_id": elevenlabs_model,
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.75
+            }
+        }
 
-    try:
-        tts_response = requests.post(tts_url, json=tts_payload, headers=tts_headers, timeout=20)
-        if tts_response.status_code == 200:
-            # Convert bytes to Base64 data URI
-            audio_base64 = base64.b64encode(tts_response.content).decode("utf-8")
-            audio_data_uri = f"data:audio/mpeg;base64,{audio_base64}"
-        else:
-            tts_error = f"ElevenLabs API Error ({tts_response.status_code}): {tts_response.text}"
-            print(f"TTS Error: {tts_error}")
-    except Exception as e:
-        tts_error = f"Failed to connect to ElevenLabs API: {str(e)}"
-        print(f"TTS Error connection exception: {tts_error}")
+        try:
+            tts_response = requests.post(tts_url, json=tts_payload, headers=tts_headers, timeout=20)
+            if tts_response.status_code == 200:
+                # Convert bytes to Base64 data URI
+                audio_base64 = base64.b64encode(tts_response.content).decode("utf-8")
+                audio_data_uri = f"data:audio/mpeg;base64,{audio_base64}"
+            else:
+                tts_error = f"ElevenLabs API Error ({tts_response.status_code}): {tts_response.text}"
+                print(f"TTS Error: {tts_error}")
+        except Exception as e:
+            tts_error = f"Failed to connect to ElevenLabs API: {str(e)}"
+            print(f"TTS Error connection exception: {tts_error}")
 
     return {
         "text": reply_text,

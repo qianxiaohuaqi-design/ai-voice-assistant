@@ -1124,8 +1124,7 @@
       opacity: 0.95;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
       text-align: center;
-      transition: opacity 400ms cubic-bezier(0.25, 0.8, 0.25, 1), transform 400ms cubic-bezier(0.25, 0.8, 0.25, 1), filter 400ms cubic-bezier(0.25, 0.8, 0.25, 1);
-      transform: translateY(0);
+      transition: opacity 500ms ease, filter 500ms ease;
       filter: blur(0);
       opacity: 1;
     }
@@ -1136,14 +1135,12 @@
     /* Subtitle animation states */
     #orb-subtitle.fading-in {
       opacity: 0;
-      transform: translateY(6px);
-      filter: blur(4px);
+      filter: blur(6px);
     }
 
     #orb-subtitle.fading-out {
       opacity: 0;
-      transform: translateY(-4px);
-      filter: blur(4px);
+      filter: blur(6px);
     }
 
     /* English line styling: clean sans-serif large */
@@ -1805,6 +1802,7 @@
     }
     
     .auth-subtitle {
+      display: none;
       font-size: 0.85rem;
       color: var(--text-muted);
       text-align: center;
@@ -1921,7 +1919,7 @@
           </button>
 
           <!-- Voice Playback Mute Toggle -->
-          <button class="icon-btn" id="voice-toggle" title="开启/关闭语音播放" onclick="toggleMute()">
+          <button class="icon-btn" id="voice-toggle" title="当前为：语音播报模式 (点击关闭语音以省额度)" onclick="toggleMute()">
             <svg id="speaker-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -2405,9 +2403,7 @@
     let recordingAnimationId = null;
 
     // Default Voices preset
-    const defaultVoices = [
-      { name: "Chisaki (您的专属声音)", id: "x7tNCivOKFAydss7fglA" }
-    ];
+    const defaultVoices = [];
 
     // Global Auth State
     let authToken = localStorage.getItem('auth_token') || '';
@@ -3464,7 +3460,7 @@
       }, duration);
     }
 
-    // Toggle mute state
+    // Toggle mute state (Text-only vs Voice mode)
     function toggleMute() {
       isMuted = !isMuted;
       localStorage.setItem('is_muted', isMuted);
@@ -3475,7 +3471,7 @@
         currentAudio.pause();
         stopAllWaveforms();
       }
-      showToast(isMuted ? '已静音语音播报' : '已开启语音播报', 2000);
+      showToast(isMuted ? '已切换为纯文字模式 (不消耗语音额度)' : '已开启语音播报模式', 2500);
     }
 
     function updateMuteUI() {
@@ -3483,6 +3479,7 @@
       const speakerIcon = document.getElementById('speaker-icon');
       if (isMuted) {
         speakerBtn.classList.add('muted');
+        speakerBtn.title = "当前为：纯文字模式 (点击开启语音播报)";
         speakerIcon.innerHTML = `
           <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
           <line x1="23" y1="9" x2="17" y2="15"></line>
@@ -3490,6 +3487,7 @@
         `;
       } else {
         speakerBtn.classList.remove('muted');
+        speakerBtn.title = "当前为：语音播报模式 (点击关闭语音以省额度)";
         speakerIcon.innerHTML = `
           <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
           <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -3656,7 +3654,8 @@
             response_language: responseLang,
             elevenlabs_model: eModel,
             translate_enabled: transEnable,
-            translate_target: transTarget
+            translate_target: transTarget,
+            tts_enabled: !isMuted
           }),
           signal: signal
         });
@@ -3905,7 +3904,7 @@
           setTimeout(() => {
             subtitleEl.innerHTML = '';
             subtitleEl.className = '';
-          }, 400);
+          }, 500);
         }
         return;
       }
@@ -3975,7 +3974,7 @@
             setTimeout(() => {
               subtitleEl.innerHTML = '';
               subtitleEl.className = '';
-            }, 400);
+            }, 500);
           }
           return;
         }
@@ -3986,7 +3985,7 @@
             subtitleEl.className = 'fading-out';
             setTimeout(() => {
               showSentenceFallback(index);
-            }, 400);
+            }, 500);
           } else {
             showSentenceFallback(index);
           }
@@ -4181,7 +4180,7 @@
           setTimeout(() => {
             subtitleEl.innerHTML = '';
             subtitleEl.className = '';
-          }, 400);
+          }, 500);
         }
         currentSentences = [];
         currentSentenceTimes = [];
@@ -4262,7 +4261,7 @@
               setTimeout(() => {
                 subtitleEl.innerHTML = '';
                 subtitleEl.className = '';
-              }, 400);
+              }, 500);
             }
             // Reset subtitle sentences so that timeupdate doesn't run anymore
             currentSentences = [];
