@@ -43,6 +43,8 @@ class User(Base):
     translate_target = Column(String, default="Chinese")
     ui_theme = Column(String, default="dark")
     is_muted = Column(Boolean, default=False)
+    tts_mode = Column(String, default="elevenlabs")
+    edge_voice = Column(String, default="zh-CN-XiaoxiaoNeural")
     
     sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
 
@@ -74,3 +76,14 @@ def verify_password(stored_password_hash: str, password: str) -> bool:
 # Initialize database schema
 def init_db():
     Base.metadata.create_all(bind=engine)
+    from sqlalchemy import text
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN tts_mode VARCHAR DEFAULT 'elevenlabs'"))
+    except Exception:
+        pass
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN edge_voice VARCHAR DEFAULT 'zh-CN-XiaoxiaoNeural'"))
+    except Exception:
+        pass

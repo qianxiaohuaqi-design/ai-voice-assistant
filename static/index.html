@@ -2241,7 +2241,7 @@
                 <p>点击左下角侧边栏的 <strong>“系统设置”</strong> 按钮，拉到最底部的 <strong>“开发者 API 配置”</strong>：</p>
                 <ul>
                   <li><strong>AI 大模型 Key</strong>: 填写您的 API Key。本助手不限制模型渠道，全面支持 DeepSeek, OpenAI, Claude, Gemini, Grok 等各种大模型或第三方中转接口的 API Key。若使用代理或中转接口，可配合在下方填写自定义的代理地址 (Base URL)。</li>
-                  <li><strong>ElevenLabs Key</strong>: 填写您的语音合成 API Key，用于生成精美的声音。</li>
+                  <li><strong>ElevenLabs Key</strong>: 填写您的语音合成 API Key，用于生成精美的声音。(若使用 Edge-TTS 免费模式则无需填写)</li>
                 </ul>
               </div>
             </div>
@@ -2261,7 +2261,7 @@
               <div class="guide-card-title">🛡️ 3. 右上角按键功能与省额度秘籍</div>
               <div class="guide-card-body">
                 <ul>
-                  <li><strong>语音/静音按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>)</strong>: 一键开启/关闭语音。当切换为<strong>“纯文字模式”</strong>时，后端会直接跳过 ElevenLabs 语音合成接口，发送请求时不消耗 ElevenLabs 额度。</li>
+                  <li><strong>语音/静音按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>)</strong>: 一键开启/关闭语音。当切换为<strong>“纯文字模式”</strong>时，后端会直接跳过语音合成接口，发送请求时不消耗语音额度。</li>
                   <li><strong>星云按钮 (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; display: inline-block;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0"></path></svg>)</strong>: 一键在<strong>“传统聊天面板”</strong>和<strong>“星云模式”</strong>间切换，能带来更沉浸式的交互体验。</li>
                 </ul>
               </div>
@@ -2415,6 +2415,21 @@
             </div>
           </div>
 
+          <!-- TTS Mode Selector -->
+          <div class="form-group">
+            <label class="form-label">语音合成模式 (TTS Mode)</label>
+            <div class="custom-select-container" id="tts-mode-dropdown">
+              <button type="button" class="custom-select-trigger">
+                <span>ElevenLabs (高音质，自备 Key)</span>
+              </button>
+              <input type="hidden" id="tts-mode" value="elevenlabs">
+              <div class="custom-select-options">
+                <div class="custom-select-option selected" data-value="elevenlabs">ElevenLabs (高音质，自备 Key)</div>
+                <div class="custom-select-option" data-value="edge">Edge-TTS (免费免配置，推荐)</div>
+              </div>
+            </div>
+          </div>
+
           <!-- ElevenLabs TTS Model Selector -->
           <div class="form-group">
             <label class="form-label">ELEVENLABS 语音模型</label>
@@ -2500,6 +2515,31 @@
               <input type="hidden" id="voice-select" value="">
               <div class="custom-select-options" id="voice-select-options">
                 <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Edge-TTS Voice Selection -->
+          <div class="form-group" id="edge-voice-wrapper" style="display: none;">
+            <label class="form-label">选择 Edge-TTS 声音</label>
+            <div class="custom-select-container" id="edge-voice-dropdown">
+              <button type="button" class="custom-select-trigger">
+                <span>晓晓 (zh-CN-XiaoxiaoNeural - 推荐女声)</span>
+              </button>
+              <input type="hidden" id="edge-voice" value="zh-CN-XiaoxiaoNeural">
+              <div class="custom-select-options">
+                <div class="custom-select-option selected" data-value="zh-CN-XiaoxiaoNeural">晓晓 (zh-CN-XiaoxiaoNeural - 推荐女声)</div>
+                <div class="custom-select-option" data-value="zh-CN-YunxiNeural">云希 (zh-CN-YunxiNeural - 推荐男声)</div>
+                <div class="custom-select-option" data-value="zh-CN-YunjianNeural">云健 (zh-CN-YunjianNeural - 运动活力男声)</div>
+                <div class="custom-select-option" data-value="zh-CN-XiaoyiNeural">晓伊 (zh-CN-XiaoyiNeural - 甜美女声)</div>
+                <div class="custom-select-option" data-value="zh-CN-YunyangNeural">云扬 (zh-CN-YunyangNeural - 专业男声)</div>
+                <div class="custom-select-option" data-value="zh-CN-XiaochenNeural">晓辰 (zh-CN-XiaochenNeural - 亲切女声)</div>
+                <div class="custom-select-option" data-value="zh-CN-XiaoshuangNeural">晓双 (zh-CN-XiaoshuangNeural - 可爱童声)</div>
+                <div class="custom-select-option" data-value="en-US-AriaNeural">Aria (en-US-AriaNeural - 英文女声)</div>
+                <div class="custom-select-option" data-value="en-US-GuyNeural">Guy (en-US-GuyNeural - 英文男声)</div>
+                <div class="custom-select-option" data-value="en-US-JennyNeural">Jenny (en-US-JennyNeural - 英文女声)</div>
+                <div class="custom-select-option" data-value="ja-JP-NanamiNeural">七海 (ja-JP-NanamiNeural - 日文女声)</div>
+                <div class="custom-select-option" data-value="ja-JP-KeitaNeural">启太 (ja-JP-KeitaNeural - 日文男声)</div>
               </div>
             </div>
           </div>
@@ -2627,6 +2667,24 @@
       initCustomSelect('voice-select-dropdown');
       
       initCustomSelect('translate-target-dropdown');
+      
+      // Initialize TTS Mode & Edge voice selects
+      initCustomSelect('tts-mode-dropdown', (val) => {
+        updateTTSModeVisibility(val);
+        updateHUDModelInfo();
+      });
+      initCustomSelect('edge-voice-dropdown', (val) => {
+        localStorage.setItem('edge_voice', val);
+        updateHUDModelInfo();
+      });
+
+      // Set initial values from localStorage
+      const savedTTSMode = localStorage.getItem('tts_mode') || 'elevenlabs';
+      setCustomSelectValue('tts-mode-dropdown', savedTTSMode);
+      updateTTSModeVisibility(savedTTSMode);
+      
+      const savedEdgeVoice = localStorage.getItem('edge_voice') || 'zh-CN-XiaoxiaoNeural';
+      setCustomSelectValue('edge-voice-dropdown', savedEdgeVoice);
       
       // Global click handler to close custom selects
       document.addEventListener('click', () => {
@@ -2900,15 +2958,46 @@
       }
 
       // 2. Voice model update
-      const voiceModel = document.getElementById('elevenlabs-model').value || localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2';
+      const ttsMode = localStorage.getItem('tts_mode') || 'elevenlabs';
       const techVoiceModelVal = document.getElementById('tech-voice-model-val');
       if (techVoiceModelVal) {
-        let cleanVoiceModel = voiceModel;
-        if (voiceModel === 'eleven_multilingual_v2') cleanVoiceModel = 'eleven-multilingual-v2';
-        else if (voiceModel === 'eleven_turbo_v2_5') cleanVoiceModel = 'eleven-turbo-v2.5';
-        else if (voiceModel === 'eleven_flash_v1') cleanVoiceModel = 'eleven-flash-v1';
-        else if (voiceModel === 'eleven_monolingual_v1') cleanVoiceModel = 'eleven-monolingual-v1';
-        techVoiceModelVal.innerText = cleanVoiceModel;
+        if (ttsMode === 'edge') {
+          const edgeVoice = localStorage.getItem('edge_voice') || 'zh-CN-XiaoxiaoNeural';
+          let shortVoice = edgeVoice.split('-').pop().replace('Neural', '');
+          techVoiceModelVal.innerText = `edge-tts (${shortVoice})`;
+        } else {
+          const voiceModel = document.getElementById('elevenlabs-model').value || localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2';
+          let cleanVoiceModel = voiceModel;
+          if (voiceModel === 'eleven_multilingual_v2') cleanVoiceModel = 'eleven-multilingual-v2';
+          else if (voiceModel === 'eleven_turbo_v2_5') cleanVoiceModel = 'eleven-turbo-v2.5';
+          else if (voiceModel === 'eleven_flash_v1') cleanVoiceModel = 'eleven-flash-v1';
+          else if (voiceModel === 'eleven_monolingual_v1') cleanVoiceModel = 'eleven-monolingual-v1';
+          techVoiceModelVal.innerText = cleanVoiceModel;
+        }
+      }
+    }
+
+    function updateTTSModeVisibility(mode) {
+      const isElevenLabs = (mode === 'elevenlabs');
+      
+      const elevenlabsModelGroup = document.getElementById('elevenlabs-model-dropdown')?.closest('.form-group');
+      const voiceSelectGroup = document.getElementById('voice-select-dropdown')?.closest('.form-group');
+      const voiceManagementCard = document.querySelector('.voice-management-card');
+      const elevenlabsKeyGroup = document.getElementById('elevenlabs-key')?.closest('.form-group');
+      const edgeVoiceWrapper = document.getElementById('edge-voice-wrapper');
+      
+      if (isElevenLabs) {
+        if (elevenlabsModelGroup) elevenlabsModelGroup.style.display = 'block';
+        if (voiceSelectGroup) voiceSelectGroup.style.display = 'block';
+        if (voiceManagementCard) voiceManagementCard.style.display = 'block';
+        if (elevenlabsKeyGroup) elevenlabsKeyGroup.style.display = 'block';
+        if (edgeVoiceWrapper) edgeVoiceWrapper.style.display = 'none';
+      } else {
+        if (elevenlabsModelGroup) elevenlabsModelGroup.style.display = 'none';
+        if (voiceSelectGroup) voiceSelectGroup.style.display = 'none';
+        if (voiceManagementCard) voiceManagementCard.style.display = 'none';
+        if (elevenlabsKeyGroup) elevenlabsKeyGroup.style.display = 'none';
+        if (edgeVoiceWrapper) edgeVoiceWrapper.style.display = 'block';
       }
     }
 
@@ -3378,6 +3467,9 @@
       const transEnable = document.getElementById('translate-enable').value === 'true';
       const transTarget = document.getElementById('translate-target').value;
 
+      const ttsMode = document.getElementById('tts-mode').value || 'elevenlabs';
+      const edgeVoice = document.getElementById('edge-voice').value || 'zh-CN-XiaoxiaoNeural';
+
       localStorage.setItem('anthropic_key', aKey);
       localStorage.setItem('anthropic_base', aBase);
       localStorage.setItem('response_language', lang);
@@ -3386,6 +3478,8 @@
       localStorage.setItem('elevenlabs_model', eModel);
       localStorage.setItem('translate_enable', transEnable);
       localStorage.setItem('translate_target', transTarget);
+      localStorage.setItem('tts_mode', ttsMode);
+      localStorage.setItem('edge_voice', edgeVoice);
       
       updateHUDModelInfo();
       renderChatUI(); // Re-render chat UI to immediately apply new translation / settings
@@ -3513,6 +3607,8 @@
             translate_target: transTarget,
             ui_theme: theme,
             is_muted: muted,
+            tts_mode: ttsMode,
+            edge_voice: edgeVoice,
             sessions: syncSessions
           })
         });
@@ -3557,8 +3653,10 @@
 
           // Automatically pop up settings modal if keys are missing
           const hasAnthropic = localStorage.getItem('anthropic_key') || config.has_anthropic_key;
+          const ttsMode = localStorage.getItem('tts_mode') || 'elevenlabs';
           const hasElevenLabs = localStorage.getItem('elevenlabs_key') || config.has_elevenlabs_key;
-          if (!hasAnthropic || !hasElevenLabs) {
+          const needsSetup = !hasAnthropic || (ttsMode === 'elevenlabs' && !hasElevenLabs);
+          if (needsSetup) {
             setTimeout(openModal, 800);
           }
         })
@@ -3608,6 +3706,9 @@
         
         setCustomSelectValue('response-language-dropdown', data.response_language || 'auto');
         setCustomSelectValue('elevenlabs-model-dropdown', data.elevenlabs_model || 'eleven_multilingual_v2');
+        setCustomSelectValue('tts-mode-dropdown', data.tts_mode || 'elevenlabs');
+        setCustomSelectValue('edge-voice-dropdown', data.edge_voice || 'zh-CN-XiaoxiaoNeural');
+        updateTTSModeVisibility(data.tts_mode || 'elevenlabs');
         
         const transSwitch = document.getElementById('translate-enable-switch');
         const transInput = document.getElementById('translate-enable');
@@ -3832,13 +3933,20 @@
       const transEnable = localStorage.getItem('translate_enable') === 'true';
       const transTarget = localStorage.getItem('translate_target') || 'Chinese';
 
+      const ttsMode = localStorage.getItem('tts_mode') || 'elevenlabs';
+      const edgeVoice = localStorage.getItem('edge_voice') || 'zh-CN-XiaoxiaoNeural';
+
       const serverConfig = window.serverConfig || { has_anthropic_key: false, has_elevenlabs_key: false };
       const hasAnthropic = aKey || serverConfig.has_anthropic_key;
       const hasElevenLabs = eKey || serverConfig.has_elevenlabs_key;
 
-      if (!hasAnthropic || !hasElevenLabs) {
+      if (!hasAnthropic || (ttsMode === 'elevenlabs' && !isMuted && !hasElevenLabs)) {
         openModal();
-        showToast('请先配置您的 API Key！', 3000);
+        if (!hasAnthropic) {
+          showToast('请先配置您的 AI 大模型 API Key！', 3000);
+        } else {
+          showToast('请先配置您的 ElevenLabs Key，或切换为 Edge-TTS 免费模式！', 3000);
+        }
         return;
       }
 
@@ -3888,7 +3996,9 @@
             elevenlabs_model: eModel,
             translate_enabled: transEnable,
             translate_target: transTarget,
-            tts_enabled: !isMuted
+            tts_enabled: !isMuted,
+            tts_mode: ttsMode,
+            edge_voice: edgeVoice
           }),
           signal: signal
         });

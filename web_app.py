@@ -66,6 +66,8 @@ class ChatRequest(BaseModel):
     translate_enabled: Optional[bool] = False
     translate_target: Optional[str] = "Chinese"
     tts_enabled: Optional[bool] = True
+    tts_mode: Optional[str] = "elevenlabs"
+    edge_voice: Optional[str] = "zh-CN-XiaoxiaoNeural"
 
 
 # Ensure the static directory exists for the frontend files
@@ -117,6 +119,8 @@ class SyncPayload(BaseModel):
     translate_target: Optional[str] = None
     ui_theme: Optional[str] = None
     is_muted: Optional[bool] = False
+    tts_mode: Optional[str] = "elevenlabs"
+    edge_voice: Optional[str] = "zh-CN-XiaoxiaoNeural"
     sessions: List[SessionSyncItem] = []
 
 @app.post("/api/register")
@@ -184,6 +188,8 @@ def sync_load(authorization: Optional[str] = Header(None), db: Session = Depends
         "translate_target": user.translate_target or "Chinese",
         "ui_theme": user.ui_theme or "dark",
         "is_muted": user.is_muted or False,
+        "tts_mode": user.tts_mode or "elevenlabs",
+        "edge_voice": user.edge_voice or "zh-CN-XiaoxiaoNeural",
         "sessions": sessions_data
     }
 
@@ -208,6 +214,8 @@ def sync_save(req: SyncPayload, authorization: Optional[str] = Header(None), db:
     user.translate_target = req.translate_target
     user.ui_theme = req.ui_theme
     user.is_muted = req.is_muted
+    user.tts_mode = req.tts_mode or "elevenlabs"
+    user.edge_voice = req.edge_voice or "zh-CN-XiaoxiaoNeural"
     
     # Update sessions (insert/update/delete)
     existing_sessions = db.query(ChatSession).filter(ChatSession.user_id == user.id).all()
@@ -270,11 +278,13 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
 
     # Resolve TTS enabled state
     tts_enabled = request.tts_enabled if request.tts_enabled is not None else True
+    tts_mode = request.tts_mode or user.tts_mode or "elevenlabs"
+    edge_voice = request.edge_voice or user.edge_voice or "zh-CN-XiaoxiaoNeural"
 
     if not anthropic_key:
         raise HTTPException(status_code=400, detail="检测到未配置 AI 大模型 API Key。请先点击左下角【系统设置】进行配置。")
-    if tts_enabled and not elevenlabs_key:
-        raise HTTPException(status_code=400, detail="检测到未配置 ElevenLabs 语音合成 Key。请先点击左下角【系统设置】进行配置。")
+    if tts_enabled and tts_mode == "elevenlabs" and not elevenlabs_key:
+        raise HTTPException(status_code=400, detail="检测到目前为 ElevenLabs 模式但未配置语音 Key。请先点击左下角【系统设置】进行配置，或切换为 Edge-TTS 免费模式。")
 
 
 
@@ -402,38 +412,54 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     clean_tts_text = re.sub(r'<translation>.*?</translation>', '', reply_text, flags=re.DOTALL | re.IGNORECASE)
     clean_tts_text = re.sub(r'\s+', ' ', clean_tts_text).strip()
 
-    # 3. Call ElevenLabs TTS API (Graceful degradation if this fails)
+    # 3. Call TTS API (ElevenLabs or Edge-TTS)
     audio_data_uri = None
     tts_error = None
 
-    if tts_enabled and elevenlabs_key:
-        tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-        tts_headers = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": elevenlabs_key
-        }
-        tts_payload = {
-            "text": clean_tts_text,
-            "model_id": elevenlabs_model,
-            "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.75
+    if tts_enabled:
+        if tts_mode == "edge":
+            try:
+                import edge_tts
+                communicate = edge_tts.Communicate(clean_tts_text, edge_voice)
+                audio_bytes = b""
+                async for chunk in communicate.stream():
+                    if chunk["type"] == "audio":
+                        audio_bytes += chunk["data"]
+                if audio_bytes:
+                    audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+                    audio_data_uri = f"data:audio/mpeg;base64,{audio_base64}"
+                else:
+                    tts_error = "Edge-TTS generated empty audio output."
+            except Exception as e:
+                tts_error = f"Failed to generate audio via Edge-TTS: {str(e)}"
+                print(f"Edge-TTS Error: {tts_error}")
+        elif elevenlabs_key:
+            tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+            tts_headers = {
+                "Accept": "audio/mpeg",
+                "Content-Type": "application/json",
+                "xi-api-key": elevenlabs_key
             }
-        }
+            tts_payload = {
+                "text": clean_tts_text,
+                "model_id": elevenlabs_model,
+                "voice_settings": {
+                    "stability": 0.5,
+                    "similarity_boost": 0.75
+                }
+            }
 
-        try:
-            tts_response = requests.post(tts_url, json=tts_payload, headers=tts_headers, timeout=20)
-            if tts_response.status_code == 200:
-                # Convert bytes to Base64 data URI
-                audio_base64 = base64.b64encode(tts_response.content).decode("utf-8")
-                audio_data_uri = f"data:audio/mpeg;base64,{audio_base64}"
-            else:
-                tts_error = f"ElevenLabs API Error ({tts_response.status_code}): {tts_response.text}"
-                print(f"TTS Error: {tts_error}")
-        except Exception as e:
-            tts_error = f"Failed to connect to ElevenLabs API: {str(e)}"
-            print(f"TTS Error connection exception: {tts_error}")
+            try:
+                tts_response = requests.post(tts_url, json=tts_payload, headers=tts_headers, timeout=20)
+                if tts_response.status_code == 200:
+                    audio_base64 = base64.b64encode(tts_response.content).decode("utf-8")
+                    audio_data_uri = f"data:audio/mpeg;base64,{audio_base64}"
+                else:
+                    tts_error = f"ElevenLabs API Error ({tts_response.status_code}): {tts_response.text}"
+                    print(f"TTS Error: {tts_error}")
+            except Exception as e:
+                tts_error = f"Failed to connect to ElevenLabs API: {str(e)}"
+                print(f"TTS Error connection exception: {tts_error}")
 
     return {
         "text": reply_text,
