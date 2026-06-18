@@ -56,6 +56,7 @@ class ChatSession(Base):
     title = Column(String, nullable=False)
     messages = Column(Text, default="[]")  # JSON string of messages list
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_pinned = Column(Boolean, default=False)
     
     user = relationship("User", back_populates="sessions")
 
@@ -85,5 +86,10 @@ def init_db():
     try:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN edge_voice VARCHAR DEFAULT 'zh-CN-XiaoxiaoNeural'"))
+    except Exception:
+        pass
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE"))
     except Exception:
         pass

@@ -106,6 +106,7 @@ class SessionSyncItem(BaseModel):
     id: str
     title: str
     messages: str  # JSON array as string
+    is_pinned: Optional[bool] = False
 
 class SyncPayload(BaseModel):
     anthropic_key: Optional[str] = None
@@ -173,7 +174,8 @@ def sync_load(authorization: Optional[str] = Header(None), db: Session = Depends
         sessions_data.append({
             "id": s.id,
             "title": s.title,
-            "messages": s.messages
+            "messages": s.messages,
+            "is_pinned": s.is_pinned
         })
         
     return {
@@ -229,13 +231,15 @@ def sync_save(req: SyncPayload, authorization: Optional[str] = Header(None), db:
             if db_sess:
                 db_sess.title = s_item.title
                 db_sess.messages = s_item.messages
+                db_sess.is_pinned = s_item.is_pinned
                 db_sess.updated_at = datetime.utcnow()
         else:
             new_sess = ChatSession(
                 id=s_item.id,
                 user_id=user.id,
                 title=s_item.title,
-                messages=s_item.messages
+                messages=s_item.messages,
+                is_pinned=s_item.is_pinned
             )
             db.add(new_sess)
             
@@ -245,6 +249,35 @@ def sync_save(req: SyncPayload, authorization: Optional[str] = Header(None), db:
             
     db.commit()
     return {"status": "success"}
+
+@app.get("/api/models")
+async def get_models(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    token = authorization.split(" ")[1]
+    user = get_user_from_token(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    anthropic_key = user.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
+    anthropic_base = user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or "https://api.anthropic.com"
+    anthropic_base = anthropic_base.rstrip("/")
+
+    if not anthropic_key:
+        return {"data": [{"id": "deepseek-chat"}, {"id": "claude-3-5-sonnet-20241022"}]}
+
+    try:
+        if "api.anthropic.com" in anthropic_base:
+            return {"data": [{"id": "claude-3-5-sonnet-20241022"}, {"id": "claude-3-5-haiku-20241022"}, {"id": "claude-3-opus-20240229"}]}
+        
+        headers = {"Authorization": f"Bearer {anthropic_key}", "Content-Type": "application/json"}
+        resp = requests.get(f"{anthropic_base}/v1/models", headers=headers, timeout=5)
+        if resp.ok:
+            return resp.json()
+        else:
+            return {"data": [{"id": "deepseek-chat"}, {"id": "claude-3-5-sonnet-20241022"}]}
+    except Exception:
+        return {"data": [{"id": "deepseek-chat"}, {"id": "claude-3-5-sonnet-20241022"}]}
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
@@ -306,7 +339,7 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
         use_native_anthropic = True
     
     # Build the voice assistant system instruction
-    system_instruction = "You are a helpful voice assistant. Keep your responses concise (no more than 3 sentences) as they will be read out loud."
+    system_instruction = "You are a helpful AI voice assistant."
     
     translate_enabled = request.translate_enabled or False
     translate_target = request.translate_target or "Chinese"
@@ -327,10 +360,10 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     if request.response_language and request.response_language != "auto":
         system_instruction += f" You MUST respond ONLY in {request.response_language}."
         if translate_enabled:
-            system_instruction += f" Additionally, you MUST translate each sentence of your response into {target_lang_name}. Format your response strictly by appending the translation inside a '<translation>...</translation>' block directly after each sentence in {request.response_language}. Example: Sentence in {request.response_language} <translation>Translation in {target_lang_name}</translation> (If a sentence is already in {target_lang_name}, do NOT output a <translation> tag for it.)"
+            system_instruction += f"\nIMPORTANT: You must translate every single sentence of your response into {target_lang_name}.\nFormat strictly: Append the translation inside a '<translation>' block directly after EACH sentence.\nExample: Hello, how are you? <translation>你好，你怎么样？</translation>\nIf your output sentence is ALREADY in {target_lang_name}, DO NOT output a <translation> tag for it."
     else:
         if translate_enabled:
-            system_instruction += f" Additionally, you MUST translate each sentence of your response into {target_lang_name}. Format your response strictly by appending the translation inside a '<translation>...</translation>' block directly after each sentence. Example: Sentence in spoken language <translation>Translation in {target_lang_name}</translation> (If a sentence is already in {target_lang_name}, do NOT output a <translation> tag for it.)"
+            system_instruction += f"\nIMPORTANT: You must translate every single sentence of your response into {target_lang_name}.\nFormat strictly: Append the translation inside a '<translation>' block directly after EACH sentence.\nExample: Hello, how are you? <translation>你好，你怎么样？</translation>\nIf your output sentence is ALREADY in {target_lang_name}, DO NOT output a <translation> tag for it."
 
     # Format messages payload
     messages_payload = []

@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认识 Claude Code — 你的 AI 编程小助手 🦀</title>
+
+    <!-- Fonts: Fredoka One (display) + Quicksand (body) + ZCOOL XiaoWei (CJK) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400..700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           CSS CUSTOM PROPERTIES — DAISY DAYS THEME
+           =========================================== */
+        :root {
+            /* Pastel garden palette */
+            --cream: #F5F0E6;
+            --turquoise: #7ECDC0;
+            --soft-pink: #F7C8D4;
+            --butter: #FDE68A;
+            --mint: #A8E6CF;
+            --lavender: #D4A5E8;
+            --peach: #FFCBA4;
+            --sky: #A8D8F0;
+            --coral: #F8635F;
+            --text-dark: #2D2D2D;
+            --text-muted: #6B6B6B;
+            --white: #FFFFFF;
+
+            /* Typography (fixed 1920x1080 stage) */
+            --font-display: 'Fredoka One', 'ZCOOL XiaoWei', cursive;
+            --font-body: 'Quicksand', sans-serif;
+
+            /* Shadows */
+            --shadow-default: 6px 6px 0 var(--text-dark);
+            --shadow-small: 4px 4px 0 var(--text-dark);
+            --shadow-text: 3px 3px 0 var(--text-dark);
+            --shadow-text-soft: 3px 3px 0 rgba(0,0,0,0.2);
+
+            /* Animation */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration: 0.6s;
+        }
+
+        /* ===========================================
+           FIXED 16:9 STAGE: MANDATORY BASE STYLES
+           =========================================== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .deck-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .deck-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--cream);
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: block;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: var(--cream);
+            font-family: var(--font-body);
+            color: var(--text-dark);
+        }
+
+        .slide.active, .slide.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        img, video, canvas, svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .deck-controls {
+            position: fixed;
+            left: 50%;
+            bottom: 22px;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+            .slide:last-child { break-after: auto; page-break-after: auto; }
+            .deck-controls { display: none !important; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+        }
+
+        /* ===========================================
+           DAISY DAYS COMPONENT STYLES
+           =========================================== */
+
+        /* Card: white bg + 3px outline + hard shadow */
+        .card, .card-lg {
+            background: var(--white);
+            border: 3px solid var(--text-dark);
+            border-radius: 20px;
+            box-shadow: var(--shadow-default);
+            position: relative;
+            z-index: 2;
+        }
+        .card-lg { border-radius: 28px; }
+
+        /* Badge pill */
+        .badge {
+            display: inline-block;
+            padding: 10px 28px;
+            border-radius: 50px;
+            border: 3px solid var(--text-dark);
+            font-family: var(--font-display);
+            font-size: 18px;
+            background: var(--butter);
+            color: var(--text-dark);
+            box-shadow: var(--shadow-small);
+        }
+
+        /* Circle marker */
+        .circle-dot {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 3px solid var(--text-dark);
+            font-family: var(--font-display);
+            font-size: 24px;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-small);
+            flex-shrink: 0;
+        }
+
+        /* Bullet dot */
+        .bullet-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--text-dark);
+            background: var(--butter);
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+
+        /* Navigation dots */
+        .nav-dots {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            z-index: 1000;
+        }
+        .nav-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid var(--text-dark);
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-dot.active {
+            background: var(--butter);
+            transform: scale(1.3);
+        }
+
+        /* Slide counter pill */
+        .slide-counter {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--white);
+            border: 3px solid var(--text-dark);
+            border-radius: 50px;
+            padding: 8px 28px;
+            font-family: var(--font-display);
+            font-size: 16px;
+            box-shadow: var(--shadow-small);
+            z-index: 1000;
+            color: var(--text-dark);
+        }
+
+        /* Decoration layer */
+        .decorations {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* ===========================================
+           ANIMATIONS
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity var(--duration) var(--ease-out-expo),
+                        transform var(--duration) var(--ease-out-expo);
+        }
+        .slide.visible .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal:nth-child(1) { transition-delay: 0.1s; }
+        .reveal:nth-child(2) { transition-delay: 0.2s; }
+        .reveal:nth-child(3) { transition-delay: 0.3s; }
+        .reveal:nth-child(4) { transition-delay: 0.4s; }
+        .reveal:nth-child(5) { transition-delay: 0.45s; }
+        .reveal:nth-child(6) { transition-delay: 0.5s; }
+        .reveal:nth-child(7) { transition-delay: 0.55s; }
+        .reveal:nth-child(8) { transition-delay: 0.6s; }
+
+        .pop-in {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.4s var(--ease-out-expo),
+                        transform 0.4s var(--ease-out-expo);
+        }
+        .slide.visible .pop-in {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .pop-in:nth-child(1) { transition-delay: 0.15s; }
+        .pop-in:nth-child(2) { transition-delay: 0.25s; }
+        .pop-in:nth-child(3) { transition-delay: 0.35s; }
+        .pop-in:nth-child(4) { transition-delay: 0.45s; }
+        .pop-in:nth-child(5) { transition-delay: 0.55s; }
+        .pop-in:nth-child(6) { transition-delay: 0.65s; }
+
+        /* ===========================================
+           SLIDE-SPECIFIC LAYOUTS
+           =========================================== */
+
+        /* Slide background variants */
+        .bg-cream { background: var(--cream); }
+        .bg-pink { background: var(--soft-pink); }
+        .bg-turquoise { background: var(--turquoise); }
+        .bg-lavender { background: var(--lavender); }
+        .bg-mint { background: var(--mint); }
+        .bg-sky { background: var(--sky); }
+
+        /* Headline on colored surface gets text-shadow + white */
+        .on-color {
+            color: var(--white);
+            text-shadow: var(--shadow-text);
+        }
+        .on-color-soft {
+            color: var(--white);
+            text-shadow: var(--shadow-text-soft);
+        }
+
+        /* Flex utilities */
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .flex-col { flex-direction: column; }
+        .gap-lg { gap: 36px; }
+        .gap-md { gap: 24px; }
+        .gap-sm { gap: 14px; }
+
+        /* Typography at 1920x1080 */
+        .text-display { font-family: var(--font-display); font-size: 100px; line-height: 1.1; letter-spacing: 0.02em; }
+        .text-headline { font-family: var(--font-display); font-size: 68px; line-height: 1.1; letter-spacing: 0.02em; }
+        .text-title { font-family: var(--font-display); font-size: 44px; line-height: 1.15; letter-spacing: 0.02em; }
+        .text-subtitle { font-family: var(--font-display); font-size: 30px; line-height: 1.2; letter-spacing: 0.02em; }
+        .text-body { font-family: var(--font-body); font-size: 22px; font-weight: 500; line-height: 1.6; }
+        .text-body-strong { font-family: var(--font-body); font-size: 22px; font-weight: 600; line-height: 1.5; }
+        .text-meta { font-family: var(--font-body); font-size: 17px; font-weight: 600; line-height: 1.45; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ═══════════════════════════════════════════
+                 SLIDE 1 — COVER 🦀
+                 ═══════════════════════════════════════════ -->
+            <section class="slide active bg-cream" data-bg="cream">
+                <div class="decorations">
+                    <!-- Top-left: big daisy -->
+                    <svg x="-20" y="-25" width="200" height="200" viewBox="0 0 120 120" style="position:absolute">
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(0 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(60 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(120 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(180 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(240 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(300 60 60)"/>
+                        <circle cx="60" cy="60" r="16" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                    <!-- Top-right: star -->
+                    <svg x="1750" y="-20" width="150" height="150" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#F7C8D4" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <!-- Bottom-left: cloud -->
+                    <svg x="30" y="860" width="180" height="140" viewBox="0 0 160 120" style="position:absolute">
+                        <ellipse cx="50" cy="85" rx="45" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5"/>
+                        <ellipse cx="90" cy="72" rx="40" ry="32" fill="#fff" stroke="#2D2D2D" stroke-width="2.5"/>
+                        <ellipse cx="120" cy="82" rx="35" ry="26" fill="#A8D8F0" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                    <!-- Bottom-right: sun -->
+                    <svg x="1700" y="880" width="180" height="180" viewBox="0 0 120 120" style="position:absolute">
+                        <circle cx="60" cy="60" r="22" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5"/>
+                        <line x1="60" y1="15" x2="60" y2="28" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="60" y1="92" x2="60" y2="105" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="15" y1="60" x2="28" y2="60" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="92" y1="60" x2="105" y2="60" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="28" y1="28" x2="37" y2="37" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="83" y1="83" x2="92" y2="92" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="83" y1="28" x2="92" y2="37" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="28" y1="83" x2="37" y2="92" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+                        <!-- smile -->
+                        <path d="M48 68 Q60 80 72 68" fill="none" stroke="#2D2D2D" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="50" cy="53" r="3" fill="#2D2D2D"/>
+                        <circle cx="70" cy="53" r="3" fill="#2D2D2D"/>
+                    </svg>
+                    <!-- Small floating stars -->
+                    <svg x="400" y="100" width="40" height="40" viewBox="0 0 40 40" style="position:absolute">
+                        <polygon points="20,2 25,14 38,17 28,26 31,38 20,31 9,38 12,26 2,17 15,14" fill="#A8E6CF" stroke="#2D2D2D" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="1380" y="180" width="35" height="35" viewBox="0 0 40 40" style="position:absolute">
+                        <polygon points="20,2 25,14 38,17 28,26 31,38 20,31 9,38 12,26 2,17 15,14" fill="#D4A5E8" stroke="#2D2D2D" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="900" y="900" width="50" height="50" viewBox="0 0 40 40" style="position:absolute">
+                        <polygon points="20,2 25,14 38,17 28,26 31,38 20,31 9,38 12,26 2,17 15,14" fill="#FFCBA4" stroke="#2D2D2D" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <div class="flex-center flex-col" style="height:100%; text-align:center; position:relative; z-index:2;">
+                    <div class="badge reveal" style="margin-bottom:20px;">🦀 Clawd on Desk 特别呈现</div>
+                    <h1 class="text-display reveal" style="color:var(--text-dark); max-width:1100px;">
+                        认识 Claude Code
+                    </h1>
+                    <p class="text-subtitle reveal" style="color:var(--text-muted); margin-top:12px; max-width:800px;">
+                        你的 AI 编程小助手 — 在终端里和你结对编程的可爱螃蟹 🦀
+                    </p>
+                    <div class="reveal" style="margin-top:32px; display:flex; gap:18px; flex-wrap:wrap; justify-content:center;">
+                        <span class="badge" style="background:var(--soft-pink);">⚡ 写代码</span>
+                        <span class="badge" style="background:var(--mint);">🔍 搜项目</span>
+                        <span class="badge" style="background:var(--sky);">🔄 Git</span>
+                        <span class="badge" style="background:var(--lavender);">🌐 联网</span>
+                    </div>
+                    <p class="text-meta reveal" style="margin-top:48px;">🦀  🐱  ☁️    Powered by Anthropic  ·  灵感来自 Clawd on Desk</p>
+                </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════
+                 SLIDE 2 — WHAT IS CLAUDE CODE? 💭
+                 ═══════════════════════════════════════════ -->
+            <section class="slide bg-pink" data-bg="pink">
+                <div class="decorations">
+                    <svg x="60" y="-30" width="160" height="160" viewBox="0 0 120 120" style="position:absolute">
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(0 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(60 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(120 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(180 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(240 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(300 60 60)"/>
+                        <circle cx="60" cy="60" r="16" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                    <svg x="1730" y="880" width="150" height="150" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="860" y="-15" width="130" height="130" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#A8E6CF" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="150" y="700" width="100" height="100" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#D4A5E8" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <div style="position:relative; z-index:2; height:100%; display:flex; flex-direction:column; padding:60px 100px;">
+                    <h2 class="text-headline on-color-soft reveal" style="text-align:center; margin-bottom:56px;">
+                        💭 什么是 Claude Code？
+                    </h2>
+                    <div style="display:flex; gap:40px; flex:1; align-items:stretch;">
+                        <!-- Card 1 -->
+                        <div class="card-lg reveal" style="flex:1; padding:56px 40px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                            <div class="circle-dot" style="background:var(--turquoise); width:80px; height:80px; font-size:36px; margin-bottom:24px;">🖥️</div>
+                            <h3 class="text-subtitle" style="color:var(--text-dark); margin-bottom:16px;">终端里的 AI</h3>
+                            <p class="text-body" style="color:var(--text-muted); line-height:1.8;">
+                                在你的命令行里直接对话<br>不需要打开网页<br>不需要 IDE 插件<br>随时随地召唤它 ✨
+                            </p>
+                        </div>
+                        <!-- Card 2 -->
+                        <div class="card-lg reveal" style="flex:1; padding:56px 40px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                            <div class="circle-dot" style="background:var(--lavender); width:80px; height:80px; font-size:36px; margin-bottom:24px;">🧠</div>
+                            <h3 class="text-subtitle" style="color:var(--text-dark); margin-bottom:16px;">理解你的项目</h3>
+                            <p class="text-body" style="color:var(--text-muted); line-height:1.8;">
+                                自动读取整个代码库<br>理解上下文给出精准建议<br>就像最懂你的<br>开发搭档 🤝
+                            </p>
+                        </div>
+                        <!-- Card 3 -->
+                        <div class="card-lg reveal" style="flex:1; padding:56px 40px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                            <div class="circle-dot" style="background:var(--peach); width:80px; height:80px; font-size:36px; margin-bottom:24px;">💬</div>
+                            <h3 class="text-subtitle" style="color:var(--text-dark); margin-bottom:16px;">结对编程伙伴</h3>
+                            <p class="text-body" style="color:var(--text-muted); line-height:1.8;">
+                                一起写代码、改 Bug<br>审查代码、搜索文件<br>你说需求<br>它来干活 🛠️
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════
+                 SLIDE 3 — CORE SUPERPOWERS ⌨️
+                 ═══════════════════════════════════════════ -->
+            <section class="slide bg-cream" data-bg="cream">
+                <div class="decorations">
+                    <svg x="60" y="880" width="150" height="150" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#FFCBA4" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="1720" y="-20" width="170" height="170" viewBox="0 0 120 120" style="position:absolute">
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(0 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(60 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(120 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(180 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(240 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(300 60 60)"/>
+                        <circle cx="60" cy="60" r="16" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                    <svg x="400" y="-15" width="100" height="100" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#D4A5E8" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <div style="position:relative; z-index:2; height:100%; display:flex; flex-direction:column; padding:50px 80px;">
+                    <h2 class="text-headline reveal" style="text-align:center; margin-bottom:40px; color:var(--text-dark);">
+                        ⌨️ 核心超能力
+                    </h2>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(2, 1fr); gap:24px; flex:1;">
+                        <div class="card reveal" style="padding:30px 32px; display:flex; gap:20px; align-items:flex-start;">
+                            <div class="bullet-dot" style="background:var(--soft-pink);"></div>
+                            <div>
+                                <h3 class="text-title" style="font-size:28px; color:var(--text-dark); margin-bottom:8px;">📝 代码生成与修改</h3>
+                                <p class="text-meta">用自然语言描述需求，自动写出高质量代码，精确定位并修改文件</p>
+                            </div>
+                        </div>
+                        <div class="card reveal" style="padding:30px 32px; display:flex; gap:20px; align-items:flex-start;">
+                            <div class="bullet-dot" style="background:var(--mint);"></div>
+                            <div>
+                                <h3 class="text-title" style="font-size:28px; color:var(--text-dark); margin-bottom:8px;">🔍 智能搜索</h3>
+                                <p class="text-meta">秒搜全项目文件，正则+语义理解，找到你想要的一切</p>
+                            </div>
+                        </div>
+                        <div class="card reveal" style="padding:30px 32px; display:flex; gap:20px; align-items:flex-start;">
+                            <div class="bullet-dot" style="background:var(--sky);"></div>
+                            <div>
+                                <h3 class="text-title" style="font-size:28px; color:var(--text-dark); margin-bottom:8px;">🔄 Git 操作</h3>
+                                <p class="text-meta">自动提交、分支管理，生成规范的 commit，查看历史与差异</p>
+                            </div>
+                        </div>
+                        <div class="card reveal" style="padding:30px 32px; display:flex; gap:20px; align-items:flex-start;">
+                            <div class="bullet-dot" style="background:var(--lavender);"></div>
+                            <div>
+                                <h3 class="text-title" style="font-size:28px; color:var(--text-dark); margin-bottom:8px;">🌐 联网搜索</h3>
+                                <p class="text-meta">搜索最新技术资讯，抓取网页内容分析，实时获取答案</p>
+                            </div>
+                        </div>
+                        <div class="card reveal" style="padding:30px 32px; display:flex; gap:20px; align-items:flex-start;">
+                            <div class="bullet-dot" style="background:var(--peach);"></div>
+                            <div>
+                                <h3 class="text-title" style="font-size:28px; color:var(--text-dark); margin-bottom:8px;">⚙️ 运行脚本</h3>
+                                <p class="text-meta">执行命令和脚本，安装依赖包，调试运行错误</p>
+                            </div>
+                        </div>
+                        <div class="card reveal" style="padding:30px 32px; display:flex; gap:20px; align-items:flex-start;">
+                            <div class="bullet-dot" style="background:var(--turquoise);"></div>
+                            <div>
+                                <h3 class="text-title" style="font-size:28px; color:var(--text-dark); margin-bottom:8px;">📦 文件管理</h3>
+                                <p class="text-meta">创建、编辑、删除文件，读写图片和 PDF，管理项目结构</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════
+                 SLIDE 4 — HIGHLIGHTS 🌟
+                 ═══════════════════════════════════════════ -->
+            <section class="slide bg-lavender" data-bg="lavender">
+                <div class="decorations">
+                    <svg x="30" y="-25" width="160" height="160" viewBox="0 0 120 120" style="position:absolute">
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(0 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(60 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(120 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(180 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(240 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(300 60 60)"/>
+                        <circle cx="60" cy="60" r="16" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                    <svg x="1740" y="900" width="130" height="130" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#F7C8D4" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="800" y="880" width="120" height="120" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#A8D8F0" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <div style="position:relative; z-index:2; height:100%; display:flex; flex-direction:column; padding:50px 80px;">
+                    <h2 class="text-headline on-color-soft reveal" style="text-align:center; margin-bottom:44px;">
+                        🌟 为什么这么可爱又强大？
+                    </h2>
+                    <div style="display:grid; grid-template-columns:repeat(2, 1fr); grid-template-rows:repeat(2, 1fr); gap:28px; flex:1;">
+                        <!-- Feature 1 -->
+                        <div class="card-lg reveal" style="padding:40px 44px; display:flex; gap:24px; align-items:flex-start;">
+                            <div class="circle-dot" style="background:var(--coral); width:72px; height:72px; font-size:32px;">🔌</div>
+                            <div>
+                                <h3 class="text-subtitle" style="color:var(--text-dark); margin-bottom:10px;">插件系统</h3>
+                                <p class="text-body" style="color:var(--text-muted);">
+                                    安装各种插件扩展能力 — GitHub、Playwright、Context7……无缝接入你的工作流，像给螃蟹穿上不同的装备 🦀
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Feature 2 -->
+                        <div class="card-lg reveal" style="padding:40px 44px; display:flex; gap:24px; align-items:flex-start;">
+                            <div class="circle-dot" style="background:var(--mint); width:72px; height:72px; font-size:32px;">🎯</div>
+                            <div>
+                                <h3 class="text-subtitle" style="color:var(--text-dark); margin-bottom:10px;">Skills 技能</h3>
+                                <p class="text-body" style="color:var(--text-muted);">
+                                    代码审查、安全扫描、深度调研、定时任务……像给螃蟹穿上不同装备，一键切换超能力
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Feature 3 -->
+                        <div class="card-lg reveal" style="padding:40px 44px; display:flex; gap:24px; align-items:flex-start;">
+                            <div class="circle-dot" style="background:var(--sky); width:72px; height:72px; font-size:32px;">🌐</div>
+                            <div>
+                                <h3 class="text-subtitle" style="color:var(--text-dark); margin-bottom:10px;">MCP 协议</h3>
+                                <p class="text-body" style="color:var(--text-muted);">
+                                    连接外部数据源 — Supabase、API、数据库……让 AI 触达更多信息，打破数据孤岛
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Feature 4 -->
+                        <div class="card-lg reveal" style="padding:40px 44px; display:flex; gap:24px; align-items:flex-start;">
+                            <div class="circle-dot" style="background:var(--peach); width:72px; height:72px; font-size:32px;">🤖</div>
+                            <div>
+                                <h3 class="text-subtitle" style="color:var(--text-dark); margin-bottom:10px;">智能代理</h3>
+                                <p class="text-body" style="color:var(--text-muted);">
+                                    自动拆解复杂任务，多代理并行工作，像小螃蟹军团一起协作，高效完成大项目 🦀🦀🦀
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-body-strong reveal" style="text-align:center; margin-top:20px; color:var(--white); text-shadow:var(--shadow-text-soft);">
+                        💜 Clawd 桌宠会陪着你，一起看 Claude Code 工作！
+                    </p>
+                </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════
+                 SLIDE 5 — USE CASES 🎮
+                 ═══════════════════════════════════════════ -->
+            <section class="slide bg-turquoise" data-bg="turquoise">
+                <div class="decorations">
+                    <svg x="50" y="880" width="140" height="140" viewBox="0 0 120 120" style="position:absolute">
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(0 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(60 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(120 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(180 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(240 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(300 60 60)"/>
+                        <circle cx="60" cy="60" r="16" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                    <svg x="1700" y="-30" width="130" height="130" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="500" y="-20" width="90" height="90" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#F7C8D4" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <div style="position:relative; z-index:2; height:100%; display:flex; flex-direction:column; padding:50px 80px;">
+                    <h2 class="text-headline on-color reveal" style="text-align:center; margin-bottom:36px;">
+                        🎮 什么时候找它帮忙？
+                    </h2>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(2, 1fr); gap:20px; flex:1;">
+                        <div class="card-lg pop-in" style="padding:28px 30px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <span style="font-size:48px;">🚀</span>
+                            <h3 class="text-title" style="font-size:26px; color:var(--text-dark); margin:8px 0;">快速原型开发</h3>
+                            <p class="text-meta">「帮我搭一个 Flask API」<br>几分钟从零到跑起来</p>
+                        </div>
+                        <div class="card-lg pop-in" style="padding:28px 30px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <span style="font-size:48px;">🐛</span>
+                            <h3 class="text-title" style="font-size:26px; color:var(--text-dark); margin:8px 0;">Bug 修复</h3>
+                            <p class="text-meta">「这个报错怎么回事？」<br>读日志 → 定位 → 改代码</p>
+                        </div>
+                        <div class="card-lg pop-in" style="padding:28px 30px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <span style="font-size:48px;">📖</span>
+                            <h3 class="text-title" style="font-size:26px; color:var(--text-dark); margin:8px 0;">项目学习</h3>
+                            <p class="text-meta">「这个项目干嘛的？」<br>几秒看懂代码结构</p>
+                        </div>
+                        <div class="card-lg pop-in" style="padding:28px 30px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <span style="font-size:48px;">🔁</span>
+                            <h3 class="text-title" style="font-size:26px; color:var(--text-dark); margin:8px 0;">自动化任务</h3>
+                            <p class="text-meta">「每小时跑一次测试」<br>定时循环，不用操心</p>
+                        </div>
+                        <div class="card-lg pop-in" style="padding:28px 30px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <span style="font-size:48px;">🎨</span>
+                            <h3 class="text-title" style="font-size:26px; color:var(--text-dark); margin:8px 0;">写文档 / PPT</h3>
+                            <p class="text-meta">「帮我做个演示文稿」<br>文字到成品一气呵成</p>
+                        </div>
+                        <div class="card-lg pop-in" style="padding:28px 30px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <span style="font-size:48px;">🧹</span>
+                            <h3 class="text-title" style="font-size:26px; color:var(--text-dark); margin:8px 0;">代码重构</h3>
+                            <p class="text-meta">「帮我优化这段代码」<br>更清晰、更高效</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════
+                 SLIDE 6 — ENDING ☁️
+                 ═══════════════════════════════════════════ -->
+            <section class="slide bg-sky" data-bg="sky">
+                <div class="decorations">
+                    <!-- Rainbow top-right -->
+                    <svg x="1580" y="120" width="300" height="180" viewBox="0 0 200 120" style="position:absolute">
+                        <path d="M20 110 Q100 -20 180 110" fill="none" stroke="#F8635F" stroke-width="16" stroke-linecap="round"/>
+                        <path d="M35 110 Q100 -5 165 110" fill="none" stroke="#FDE68A" stroke-width="16" stroke-linecap="round"/>
+                        <path d="M50 110 Q100 10 150 110" fill="none" stroke="#A8E6CF" stroke-width="16" stroke-linecap="round"/>
+                        <path d="M65 110 Q100 25 135 110" fill="none" stroke="#A8D8F0" stroke-width="16" stroke-linecap="round"/>
+                    </svg>
+                    <!-- Daisies bottom -->
+                    <svg x="30" y="820" width="170" height="170" viewBox="0 0 120 120" style="position:absolute">
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(0 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(60 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(120 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(180 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(240 60 60)"/>
+                        <ellipse cx="60" cy="22" rx="16" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5" transform="rotate(300 60 60)"/>
+                        <circle cx="60" cy="60" r="16" fill="#FDE68A" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                    <!-- Stars -->
+                    <svg x="300" y="-20" width="100" height="100" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#F7C8D4" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <svg x="900" y="900" width="80" height="80" viewBox="0 0 100 100" style="position:absolute">
+                        <polygon points="50,5 63,35 95,38 72,60 78,93 50,76 22,93 28,60 5,38 37,35" fill="#FFCBA4" stroke="#2D2D2D" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <!-- Cloud top-left -->
+                    <svg x="50" y="50" width="180" height="120" viewBox="0 0 160 120" style="position:absolute">
+                        <ellipse cx="50" cy="85" rx="45" ry="28" fill="#fff" stroke="#2D2D2D" stroke-width="2.5"/>
+                        <ellipse cx="90" cy="72" rx="40" ry="32" fill="#fff" stroke="#2D2D2D" stroke-width="2.5"/>
+                        <ellipse cx="120" cy="82" rx="35" ry="26" fill="#A8D8F0" stroke="#2D2D2D" stroke-width="2.5"/>
+                    </svg>
+                </div>
+
+                <div style="position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:60px 100px;">
+                    <h1 class="text-display on-color-soft reveal" style="margin-bottom:16px;">
+                        ☁️ 一起出发吧～
+                    </h1>
+                    <p class="text-subtitle reveal" style="color:var(--white); text-shadow:var(--shadow-text-soft); margin-bottom:40px; max-width:900px;">
+                        打开终端，输入 <span class="badge" style="background:var(--white); color:var(--text-dark); font-size:24px; padding:8px 24px;">claude</span>，然后说 Hello！
+                    </p>
+
+                    <div class="card-lg reveal" style="padding:40px 60px; max-width:800px; width:100%; margin-bottom:36px;">
+                        <p class="text-body-strong" style="color:var(--text-dark); margin-bottom:16px;">🔗 了解更多</p>
+                        <p class="text-body" style="color:var(--text-muted); line-height:2;">
+                            🦀 桌宠项目：github.com/rullerzhou-afk/clawd-on-desk<br>
+                            🌐 官网：claude.ai/code  |  anthropic.com/claude
+                        </p>
+                    </div>
+
+                    <div class="reveal" style="display:flex; gap:16px; font-size:40px;">
+                        <span>🦀</span><span>👋</span><span>💜</span><span>🐱</span><span>☁️</span><span>✨</span><span>🚀</span>
+                    </div>
+
+                    <p class="text-meta reveal" style="margin-top:28px; color:var(--white); text-shadow:var(--shadow-text-soft);">
+                        感谢 Clawd on Desk 带来的可爱灵感 🐾  |  Made with 💜 + Frontend Slides
+                    </p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Navigation UI (outside stage) -->
+    <div class="nav-dots" id="navDots"></div>
+    <div class="slide-counter" id="slideCounter">1 / 6</div>
+
+    <!-- Inline edit UI -->
+    <div class="edit-hotzone" style="position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;"></div>
+    <button id="editToggle" style="position:fixed;top:12px;left:12px;z-index:10001;background:var(--white);border:3px solid var(--text-dark);border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.3s;box-shadow:var(--shadow-small);">✏️</button>
+
+    <script>
+        /* ===========================================
+           SLIDE PRESENTATION CONTROLLER
+           =========================================== */
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.stage = document.getElementById('deckStage');
+                this.currentSlide = 0;
+                this.totalSlides = this.slides.length;
+                this.editMode = false;
+
+                this.setupStageScale();
+                this.createNavDots();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupWheelNav();
+                this.setupEditMode();
+                this.showSlide(0);
+            }
+
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(
+                        window.innerWidth / 1920,
+                        window.innerHeight / 1080
+                    );
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            createNavDots() {
+                const container = document.getElementById('navDots');
+                for (let i = 0; i < this.totalSlides; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'nav-dot';
+                    dot.addEventListener('click', () => this.showSlide(i));
+                    container.appendChild(dot);
+                }
+            }
+
+            updateNavDots() {
+                const dots = document.querySelectorAll('.nav-dot');
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === this.currentSlide);
+                });
+                document.getElementById('slideCounter').textContent =
+                    `${this.currentSlide + 1} / ${this.totalSlides}`;
+            }
+
+            showSlide(index) {
+                this.currentSlide = Math.max(0, Math.min(index, this.totalSlides - 1));
+                this.slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === this.currentSlide);
+                    slide.classList.toggle('visible', i === this.currentSlide);
+                });
+                this.updateNavDots();
+            }
+
+            next() { this.showSlide(this.currentSlide + 1); }
+            prev() { this.showSlide(this.currentSlide - 1); }
+
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    // Edit mode: don't navigate
+                    if (this.editMode && (e.target.getAttribute('contenteditable') === 'true')) return;
+
+                    switch (e.key) {
+                        case 'ArrowRight': case 'ArrowDown': case ' ':
+                            e.preventDefault(); this.next(); break;
+                        case 'ArrowLeft': case 'ArrowUp':
+                            e.preventDefault(); this.prev(); break;
+                        case 'PageDown': e.preventDefault(); this.next(); break;
+                        case 'PageUp': e.preventDefault(); this.prev(); break;
+                        case 'Home': e.preventDefault(); this.showSlide(0); break;
+                        case 'End': e.preventDefault(); this.showSlide(this.totalSlides - 1); break;
+                    }
+                });
+            }
+
+            setupTouchNav() {
+                let startX = 0, startY = 0;
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                });
+                document.addEventListener('touchend', (e) => {
+                    const dx = e.changedTouches[0].clientX - startX;
+                    const dy = e.changedTouches[0].clientY - startY;
+                    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                        dx > 0 ? this.prev() : this.next();
+                    } else if (Math.abs(dy) > 50) {
+                        dy > 0 ? this.prev() : this.next();
+                    }
+                });
+            }
+
+            setupWheelNav() {
+                let wheelTimeout;
+                document.addEventListener('wheel', (e) => {
+                    if (this.editMode) return;
+                    e.preventDefault();
+                    clearTimeout(wheelTimeout);
+                    wheelTimeout = setTimeout(() => {
+                        e.deltaY > 0 ? this.next() : this.prev();
+                    }, 100);
+                }, { passive: false });
+            }
+
+            /* ===========================================
+               INLINE EDITING
+               =========================================== */
+            setupEditMode() {
+                const editor = this;
+                const hotzone = document.querySelector('.edit-hotzone');
+                const editToggle = document.getElementById('editToggle');
+                let hideTimeout;
+
+                // Click toggle button
+                editToggle.addEventListener('click', () => {
+                    editor.toggleEditMode();
+                });
+
+                // Hotzone hover with 400ms delay
+                hotzone.addEventListener('mouseenter', () => {
+                    clearTimeout(hideTimeout);
+                    editToggle.classList.add('show');
+                    editToggle.style.opacity = '1';
+                    editToggle.style.pointerEvents = 'auto';
+                });
+                hotzone.addEventListener('mouseleave', () => {
+                    hideTimeout = setTimeout(() => {
+                        if (!editor.editMode) {
+                            editToggle.classList.remove('show');
+                            editToggle.style.opacity = '0';
+                            editToggle.style.pointerEvents = 'none';
+                        }
+                    }, 400);
+                });
+                editToggle.addEventListener('mouseenter', () => {
+                    clearTimeout(hideTimeout);
+                });
+                editToggle.addEventListener('mouseleave', () => {
+                    hideTimeout = setTimeout(() => {
+                        if (!editor.editMode) {
+                            editToggle.classList.remove('show');
+                            editToggle.style.opacity = '0';
+                            editToggle.style.pointerEvents = 'none';
+                        }
+                    }, 400);
+                });
+
+                // Hotzone direct click
+                hotzone.addEventListener('click', () => editor.toggleEditMode());
+
+                // Keyboard shortcut E
+                document.addEventListener('keydown', (e) => {
+                    if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+                        if (!e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                            editor.toggleEditMode();
+                        }
+                    }
+                });
+
+                // Ctrl+S to save
+                document.addEventListener('keydown', (e) => {
+                    if ((e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey)) {
+                        if (editor.editMode) {
+                            e.preventDefault();
+                            editor.saveEdits();
+                        }
+                    }
+                });
+            }
+
+            get isActive() { return this.editMode; }
+
+            toggleEditMode() {
+                this.editMode = !this.editMode;
+                const toggle = document.getElementById('editToggle');
+                if (this.editMode) {
+                    toggle.textContent = '💾';
+                    toggle.style.opacity = '1';
+                    toggle.style.pointerEvents = 'auto';
+                    toggle.classList.add('show', 'active');
+                    this.slides.forEach(slide => {
+                        const textEls = slide.querySelectorAll('h1, h2, h3, p, span');
+                        textEls.forEach(el => {
+                            el.setAttribute('contenteditable', 'true');
+                            el.style.outline = '2px dashed rgba(0,0,0,0.15)';
+                            el.style.outlineOffset = '4px';
+                        });
+                    });
+                } else {
+                    toggle.textContent = '✏️';
+                    toggle.classList.remove('active');
+                    if (!toggle.matches(':hover')) {
+                        toggle.style.opacity = '0';
+                        toggle.style.pointerEvents = 'none';
+                        toggle.classList.remove('show');
+                    }
+                    this.slides.forEach(slide => {
+                        const textEls = slide.querySelectorAll('[contenteditable]');
+                        textEls.forEach(el => {
+                            el.removeAttribute('contenteditable');
+                            el.style.outline = '';
+                            el.style.outlineOffset = '';
+                        });
+                    });
+                }
+            }
+
+            saveEdits() {
+                // Save edited content to localStorage
+                const content = {};
+                this.slides.forEach((slide, i) => {
+                    const textEls = slide.querySelectorAll('[contenteditable]');
+                    content[`slide-${i}`] = Array.from(textEls).map(el => el.innerHTML);
+                });
+                localStorage.setItem('claude-code-slides-content', JSON.stringify(content));
+                // Flash feedback
+                const counter = document.getElementById('slideCounter');
+                const orig = counter.textContent;
+                counter.textContent = '💾 已保存!';
+                counter.style.background = 'var(--mint)';
+                setTimeout(() => {
+                    counter.textContent = orig;
+                    counter.style.background = 'var(--white)';
+                }, 1500);
+            }
+        }
+
+        // Boot
+        new SlidePresentation();
+    </script>
+</body>
+</html>

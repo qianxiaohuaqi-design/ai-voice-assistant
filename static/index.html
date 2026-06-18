@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Claude 智能语音助手</title>
+  <title>AI语音助手</title>
   <meta name="description" content="基于 Claude 和 ElevenLabs 的高品质个人语音助手网页应用">
   
   <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
@@ -431,17 +431,21 @@
     }
 
     .chat-input {
-      width: 100%;
+      flex: 1;
       background: transparent;
       border: none;
-      color: var(--text-main);
-      font-size: 1.02rem;
-      padding: 8px 6px;
       outline: none;
-      font-family: inherit;
+      color: var(--text-color);
+      font-size: 0.95rem;
       resize: none;
+      min-height: 24px;
       max-height: 120px;
+      overflow-y: auto;
+      word-break: break-word;
+      white-space: pre-wrap;
       line-height: 1.5;
+      font-family: inherit;
+      padding: 0;
     }
 
     .input-actions-row {
@@ -793,7 +797,21 @@
       border: 1px solid rgba(0, 0, 0, 0.1);
     }
     body.light-theme .chat-input {
-      color: #1f2937;
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-color);
+      font-size: 0.95rem;
+      resize: none;
+      min-height: 24px;
+      max-height: 120px;
+      overflow-y: auto;
+      word-break: break-word;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-family: inherit;
+      padding: 0;
     }
     body.light-theme .modal-sheet {
       background: #ffffff;
@@ -2172,7 +2190,7 @@
                   <div class="custom-select-option" data-value="o3-mini">o3-mini</div>
                   <div class="custom-select-option" data-value="gpt-4o">GPT-4o</div>
                   
-                  <div class="custom-select-group-header">Anthropic Claude 系列</div>
+                  <div class="custom-select-group-header">AI 大模型系列</div>
                   <div class="custom-select-option" data-value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</div>
                   <div class="custom-select-option" data-value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</div>
                   <div class="custom-select-option" data-value="claude-opus-4-0">Claude Opus 4.0</div>
@@ -2322,9 +2340,9 @@
                   <td>OpenAI 全能王牌旗舰，综合推理、中英双语、各行业任务处理高度均衡稳定。</td>
                 </tr>
                 
-                <!-- Anthropic Claude 系列 -->
+                <!-- AI 大模型系列 -->
                 <tr class="table-group-row">
-                  <td colspan="4">Anthropic Claude 系列模型</td>
+                  <td colspan="4">AI 大模型系列模型</td>
                 </tr>
                 <tr>
                   <td><strong>Claude 3.5 Haiku</strong></td>
@@ -2592,6 +2610,19 @@
     </div>
   </div>
 
+  
+  <!-- Custom Prompt Modal -->
+  <div class="modal-overlay" id="prompt-modal" style="z-index: 1100;">
+    <div class="modal-sheet confirm-sheet">
+      <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; font-family: 'Outfit', sans-serif;" id="prompt-modal-title">请输入</div>
+      <input type="text" class="form-input" id="prompt-modal-input" style="margin-bottom: 24px; width: 100%;">
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="theme-select-btn" id="prompt-modal-cancel" style="margin: 0; padding: 10px 18px; border-radius: 12px; font-size: 0.9rem;">取消</button>
+        <button class="save-btn" id="prompt-modal-ok" style="margin: 0; padding: 10px 18px; border-radius: 12px; font-size: 0.9rem; width: auto;">确定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Custom Confirm Modal -->
   <div class="modal-overlay" id="confirm-modal" style="z-index: 1100;">
     <div class="modal-sheet confirm-sheet">
@@ -2729,7 +2760,7 @@
       }
       localStorage.setItem('chat_sessions', JSON.stringify(sessions));
       localStorage.setItem('active_session_id', activeSessionId);
-      scheduleSyncSaveToServer();
+      syncSaveToServer();
     }
 
     function renderSessionsList() {
@@ -2737,7 +2768,7 @@
       if (!listEl) return;
       listEl.innerHTML = '';
       
-      sessions.forEach(s => {
+      sessions.sort((a,b) => (b.is_pinned === a.is_pinned ? 0 : b.is_pinned ? 1 : -1)).forEach(s => {
         const item = document.createElement('div');
         item.className = `session-item ${s.id === activeSessionId ? 'active' : ''}`;
         item.onclick = () => selectSession(s.id);
@@ -2837,8 +2868,11 @@
       }
     }
 
-    function deleteSession(e, id) {
+    async function deleteSession(e, id) {
       e.stopPropagation();
+      
+      const confirmed = await showCustomConfirm("确定要删除这个对话吗？");
+      if (!confirmed) return;
       
       if (sessions.length <= 1) {
         sessions = [];
@@ -3317,7 +3351,7 @@
       e.stopPropagation();
       const voice = voicesList.find(v => v.id === id);
       if (!voice) return;
-      const newName = prompt("请输入声音新名称:", voice.name);
+      const newName = await customPrompt("请输入声音新名称:", voice.name);
       if (newName && newName.trim()) {
         voice.name = newName.trim();
         localStorage.setItem('custom_voices', JSON.stringify(voicesList));
@@ -3389,6 +3423,29 @@
 
     // Modal Control Functions
     function openModal() {
+
+      document.getElementById('anthropic-key').value = localStorage.getItem('anthropic_key') || '';
+      document.getElementById('anthropic-base').value = localStorage.getItem('anthropic_base') || (window.serverConfig ? window.serverConfig.default_anthropic_base : 'https://api.anthropic.com');
+      document.getElementById('elevenlabs-key').value = localStorage.getItem('elevenlabs_key') || '';
+      setCustomSelectValue('chat-model-dropdown', localStorage.getItem('chat_model') || 'deepseek-chat');
+      setCustomSelectValue('response-language-dropdown', localStorage.getItem('response_language') || 'auto');
+      setCustomSelectValue('elevenlabs-model-dropdown', localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2');
+      document.getElementById('translate-enable').value = localStorage.getItem('translate_enable') === 'true' ? 'true' : 'false';
+      setCustomSelectValue('translate-target-dropdown', localStorage.getItem('translate_target') || 'Chinese');
+      setCustomSelectValue('tts-mode-dropdown', localStorage.getItem('tts_mode') || 'elevenlabs');
+      setCustomSelectValue('edge-voice-dropdown', localStorage.getItem('edge_voice') || 'zh-CN-XiaoxiaoNeural');
+      document.getElementById('orb-font-size').value = localStorage.getItem('orb_font_size') || '16';
+      document.getElementById('orb-font-size-val').innerText = (localStorage.getItem('orb_font_size') || '16') + 'px';
+      
+      const transSwitch = document.getElementById('translate-enable-switch');
+      if(localStorage.getItem('translate_enable') === 'true') {
+         transSwitch.classList.add('active');
+      } else {
+         transSwitch.classList.remove('active');
+      }
+      
+      fetchModels(); // dynamically load models
+
       document.getElementById('settings-modal').classList.add('open');
     }
 
@@ -3480,6 +3537,9 @@
       localStorage.setItem('translate_target', transTarget);
       localStorage.setItem('tts_mode', ttsMode);
       localStorage.setItem('edge_voice', edgeVoice);
+      const orbFontSize = document.getElementById('orb-font-size').value;
+      localStorage.setItem('orb_font_size', orbFontSize);
+      document.documentElement.style.setProperty('--orb-subtitle-size', orbFontSize + 'px');
       
       updateHUDModelInfo();
       renderChatUI(); // Re-render chat UI to immediately apply new translation / settings
@@ -3585,6 +3645,7 @@
       const syncSessions = sessions.map(s => ({
         id: s.id,
         title: s.title,
+            is_pinned: s.is_pinned,
         messages: JSON.stringify(s.messages || [])
       }));
       
@@ -3692,6 +3753,8 @@
         localStorage.setItem('elevenlabs_model', data.elevenlabs_model || 'eleven_multilingual_v2');
         localStorage.setItem('translate_enable', data.translate_enabled ? 'true' : 'false');
         localStorage.setItem('translate_target', data.translate_target || 'Chinese');
+        localStorage.setItem('tts_mode', data.tts_mode || 'elevenlabs');
+        localStorage.setItem('edge_voice', data.edge_voice || 'zh-CN-XiaoxiaoNeural');
         localStorage.setItem('ui_theme', data.ui_theme || 'dark');
         localStorage.setItem('is_muted', data.is_muted ? 'true' : 'false');
         
@@ -3739,6 +3802,7 @@
           sessions = data.sessions.map(s => ({
             id: s.id,
             title: s.title,
+            is_pinned: s.is_pinned,
             messages: JSON.parse(s.messages || '[]')
           }));
           
@@ -4953,11 +5017,22 @@
       if (ring4) ring4.style.transform = '';
     }
 
+    async 
+    function togglePinSession(id, event) {
+      if(event) event.stopPropagation();
+      const session = sessions.find(s => s.id === id);
+      if (session) {
+        session.is_pinned = !session.is_pinned;
+        saveSessions();
+        renderSessionsList();
+      }
+    }
+
     function renameSession(e, id) {
       e.stopPropagation();
       const session = sessions.find(s => s.id === id);
       if (!session) return;
-      const newTitle = prompt("请输入新的对话名称:", session.title);
+      const newTitle = await customPrompt("请输入新的对话名称:", session.title);
       if (newTitle && newTitle.trim()) {
         session.title = newTitle.trim();
         saveSessions();
