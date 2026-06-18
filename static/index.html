@@ -581,6 +581,48 @@
       transform: translateY(0);
     }
 
+    /* Centered Dialog Modal */
+    .dialog-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 1200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .dialog-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .dialog-modal {
+      width: 100%;
+      max-width: 360px;
+      background: #141419;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      transform: scale(0.95);
+      transition: transform 0.2s cubic-bezier(0.32, 0.94, 0.6, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dialog-overlay.open .dialog-modal {
+      transform: scale(1);
+    }
+
     .modal-body {
       flex: 1 1 auto;
       overflow-y: auto;
@@ -2561,6 +2603,14 @@
               </div>
             </div>
           </div>
+          <!-- Orb Font Size -->
+          <div class="form-group">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+              星云模式文字大小
+              <span id="orb-font-size-val" style="color: var(--neon-cyan); font-weight: 600; font-size: 0.85rem;">16px</span>
+            </label>
+            <input type="range" id="orb-font-size" min="12" max="36" step="1" value="16" class="form-input" style="width: 100%; padding: 0;" oninput="document.getElementById('orb-font-size-val').innerText = this.value + 'px';">
+          </div>
 
           <!-- Voice Management Area -->
           <div class="voice-management-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 18px;">
@@ -2612,25 +2662,25 @@
 
   
   <!-- Custom Prompt Modal -->
-  <div class="modal-overlay" id="prompt-modal" style="z-index: 1100;">
-    <div class="modal-sheet confirm-sheet">
-      <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; font-family: 'Outfit', sans-serif;" id="prompt-modal-title">请输入</div>
+  <div class="dialog-overlay" id="prompt-modal">
+    <div class="dialog-modal">
+      <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; font-family: 'Outfit', sans-serif;" id="prompt-modal-title">请输入</div>
       <input type="text" class="form-input" id="prompt-modal-input" style="margin-bottom: 24px; width: 100%;">
-      <div style="display: flex; gap: 12px; justify-content: flex-end;">
-        <button class="theme-select-btn" id="prompt-modal-cancel" style="margin: 0; padding: 10px 18px; border-radius: 12px; font-size: 0.9rem;">取消</button>
-        <button class="save-btn" id="prompt-modal-ok" style="margin: 0; padding: 10px 18px; border-radius: 12px; font-size: 0.9rem; width: auto;">确定</button>
+      <div style="display: flex; gap: 12px; justify-content: space-between;">
+        <button class="theme-select-btn" id="prompt-modal-cancel" style="margin: 0; padding: 10px 0; border-radius: 12px; font-size: 0.95rem; flex: 1;">取消</button>
+        <button class="save-btn" id="prompt-modal-ok" style="margin: 0; padding: 10px 0; border-radius: 12px; font-size: 0.95rem; flex: 1;">确定</button>
       </div>
     </div>
   </div>
 
   <!-- Custom Confirm Modal -->
-  <div class="modal-overlay" id="confirm-modal" style="z-index: 1100;">
-    <div class="modal-sheet confirm-sheet">
+  <div class="dialog-overlay" id="confirm-modal">
+    <div class="dialog-modal">
       <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">确认操作</div>
       <div id="confirm-modal-message" style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5;">确定要删除吗？</div>
-      <div style="display: flex; gap: 12px; justify-content: flex-end;">
-        <button class="theme-select-btn" id="confirm-modal-cancel" style="margin: 0; padding: 10px 18px; border-radius: 12px; font-size: 0.9rem;">取消</button>
-        <button class="save-btn" id="confirm-modal-ok" style="margin: 0; padding: 10px 18px; border-radius: 12px; background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); font-size: 0.9rem; width: auto;">确定</button>
+      <div style="display: flex; gap: 12px; justify-content: space-between;">
+        <button class="theme-select-btn" id="confirm-modal-cancel" style="margin: 0; padding: 10px 0; border-radius: 12px; font-size: 0.95rem; flex: 1;">取消</button>
+        <button class="save-btn" id="confirm-modal-ok" style="margin: 0; padding: 10px 0; border-radius: 12px; background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); font-size: 0.95rem; flex: 1;">确定</button>
       </div>
     </div>
   </div>
