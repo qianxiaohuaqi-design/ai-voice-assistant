@@ -2669,6 +2669,66 @@
     let syncSaveTimer = null;
     const voiceIdPattern = /^[A-Za-z0-9_-]+$/;
 
+    function customPrompt(message, defaultValue = '') {
+      return new Promise(resolve => {
+        const modal = document.getElementById('prompt-modal');
+        const titleEl = document.getElementById('prompt-modal-title');
+        const inputEl = document.getElementById('prompt-modal-input');
+        const cancelBtn = document.getElementById('prompt-modal-cancel');
+        const okBtn = document.getElementById('prompt-modal-ok');
+        
+        titleEl.textContent = message;
+        inputEl.value = defaultValue;
+        modal.classList.add('open');
+        inputEl.focus();
+        
+        const cleanup = () => {
+          modal.classList.remove('open');
+          cancelBtn.removeEventListener('click', onCancel);
+          okBtn.removeEventListener('click', onOk);
+        };
+        
+        const onCancel = () => { cleanup(); resolve(null); };
+        const onOk = () => { cleanup(); resolve(inputEl.value); };
+        
+        cancelBtn.addEventListener('click', onCancel);
+        okBtn.addEventListener('click', onOk);
+      });
+    }
+
+    async function fetchModels() {
+      try {
+        const response = await fetch('/api/models', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const dropdown = document.getElementById('chat-model-dropdown');
+          if (dropdown && data.data && data.data.length > 0) {
+            let optionsHtml = '<div class="custom-select-group-header">云端可用模型</div>';
+            data.data.forEach(m => {
+              optionsHtml += `<div class="custom-select-option" data-value="${m.id}">${m.id}</div>`;
+            });
+            const optionsContainer = dropdown.querySelector('.custom-select-options');
+            if (optionsContainer) {
+              optionsContainer.innerHTML = optionsHtml;
+              // Re-bind click events
+              const newOptions = optionsContainer.querySelectorAll('.custom-select-option');
+              newOptions.forEach(opt => {
+                opt.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  setCustomSelectValue('chat-model-dropdown', this.getAttribute('data-value'));
+                  optionsContainer.classList.remove('show');
+                });
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch models", err);
+      }
+    }
+
     window.onload = function() {
       // Load custom voice list
       loadVoicesList();
@@ -2705,7 +2765,6 @@
         updateHUDModelInfo();
       });
       initCustomSelect('edge-voice-dropdown', (val) => {
-        localStorage.setItem('edge_voice', val);
         updateHUDModelInfo();
       });
 
@@ -3036,8 +3095,6 @@
     }
 
     function onModelChange() {
-      const model = document.getElementById('chat-model').value;
-      localStorage.setItem('chat_model', model);
       updateHUDModelInfo();
     }
 
@@ -3516,6 +3573,7 @@
       const aBase = document.getElementById('anthropic-base').value.trim() || 'https://api.anthropic.com';
       const eKey = document.getElementById('elevenlabs-key').value.trim();
       const lang = document.getElementById('response-language').value;
+      const cModel = document.getElementById('chat-model').value || 'deepseek-chat';
       const eModel = document.getElementById('elevenlabs-model').value || 'eleven_multilingual_v2';
       
       const voiceSelect = document.getElementById('voice-select');
@@ -3529,6 +3587,7 @@
 
       localStorage.setItem('anthropic_key', aKey);
       localStorage.setItem('anthropic_base', aBase);
+      localStorage.setItem('chat_model', cModel);
       localStorage.setItem('response_language', lang);
       localStorage.setItem('elevenlabs_key', eKey);
       localStorage.setItem('voice_id', vId);
