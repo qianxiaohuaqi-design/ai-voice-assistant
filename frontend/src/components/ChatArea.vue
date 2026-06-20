@@ -1,6 +1,6 @@
 <template>
-  <div class="chat-container">
-    <div id="chat-window" class="chat-window" ref="chatWindowRef">
+  <div class="chat-container" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <main id="chat-window" class="chat-window" ref="chatWindowRef">
       <div v-if="chatHistory.length === 0" class="message-row ai">
         <div class="bubble">
           <p>👋 你好！我是你的专属智能语音助手。</p>
@@ -19,10 +19,9 @@
           </button>
         </div>
       </div>
-    </div>
-    
-    <div class="input-area">
-      <div class="input-container">
+    </main>
+    <div class="input-bar">
+      <div class="input-box-container">
         <textarea 
           id="chat-input" 
           class="chat-input" 

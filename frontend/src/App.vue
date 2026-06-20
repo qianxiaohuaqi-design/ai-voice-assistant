@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar.vue'
 import ChatArea from './components/ChatArea.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import AuthModal from './components/AuthModal.vue'
+import HelpModal from './components/HelpModal.vue'
 import OrbVisualizer from './components/OrbVisualizer.vue'
 import { useAuth } from './composables/useAuth'
 import { useChat } from './composables/useChat'
@@ -11,7 +12,7 @@ import { useSettings } from './composables/useSettings'
 
 const { checkLoginStatus, isAuthModalOpen } = useAuth()
 const { isOrbMode } = useChat()
-const { isMuted, saveSettings } = useSettings()
+const { isMuted, saveSettings, isHelpModalOpen } = useSettings()
 
 const toggleMute = () => {
   isMuted.value = !isMuted.value
@@ -70,6 +71,7 @@ onMounted(() => {
     <!-- Modals -->
     <AuthModal v-if="isAuthModalOpen" />
     <SettingsModal />
+    <HelpModal :isOpen="isHelpModalOpen" @close="isHelpModalOpen = false" />
   </div>
 </template>
 

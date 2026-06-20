@@ -75,10 +75,10 @@ import { useChat } from '../composables/useChat'
 import { useSettings } from '../composables/useSettings'
 
 const { sessions, activeSessionId, createNewSession, selectSession, deleteSession, renameSession } = useChat()
-const { isSettingsModalOpen } = useSettings()
+const { isSettingsModalOpen, isHelpModalOpen } = useSettings()
 
 const openGuide = () => {
-  window.open('https://github.com/qianxiaohuaqi-design/ai-voice-assistant', '_blank')
+  isHelpModalOpen.value = true
 }
 
 const editingId = ref(null)

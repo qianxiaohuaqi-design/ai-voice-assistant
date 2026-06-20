@@ -2,6 +2,7 @@ import { ref, onMounted } from 'vue'
 
 // --- Global singleton state (shared across all component instances) ---
 const isSettingsModalOpen = ref(false)
+const isHelpModalOpen = ref(false)
 const anthropicKey = ref('')
 const anthropicBase = ref('')
 const chatModel = ref('deepseek-chat')
@@ -54,6 +55,7 @@ loadSettings()
 export function useSettings() {
   return {
     isSettingsModalOpen,
+    isHelpModalOpen,
     anthropicKey,
     anthropicBase,
     chatModel,
