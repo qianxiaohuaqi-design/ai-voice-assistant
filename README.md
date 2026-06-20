@@ -1,17 +1,17 @@
 # AI 语音助手 (AI Voice Assistant)
 
-一款现代化的全栈 AI 语音助手应用，由 Anthropic Claude 大模型提供智能对话能力，并搭载双通道文字转语音 (TTS) 引擎，为您带来极致的语音交互体验。
+一款现代化的全栈 AI 语音助手应用，支持接入各类主流大语言模型 API 提供智能对话能力，并搭载双通道文字转语音 (TTS) 引擎，为您带来极致的语音交互体验。
 
 ## ✨ 核心特性
 
-- **智能对话**：接入 Anthropic Claude API，提供具有深度、上下文连贯且高质量的智能回复。
+- **智能对话**：灵活接入各大 AI 模型 API（可通过自定义代理兼容多平台），提供具有深度、上下文连贯且高质量的智能回复。
 - **双路 TTS 引擎**：
   - **ElevenLabs**：提供超高保真、极其逼真的沉浸式语音生成（需配置 API Key）。
   - **Edge-TTS**：内置免费、免秘钥的高质量微软语音合成。
 - **现代用户界面**：基于 Vue 3 构建，响应式设计，自带侧边栏历史会话管理，以及可自定义的深浅色主题。
 - **用户认证系统**：采用基于 JWT 的安全登录体系，实现跨设备无缝同步用户配置、API Key 及聊天记录。
 - **会话管理功能**：支持自动保存、读取以及置顶重要聊天会话。
-- **高度可定制化**：用户可以自由切换聊天模型（如 Haiku 或 Sonnet）、回复语言、TTS 声音、翻译偏好等。
+- **高度可定制化**：用户可以自由切换聊天模型名称、回复语言、TTS 声音、翻译偏好等。
 - **灵活的数据库支持**：开发环境默认支持 SQLite 开箱即用，生产环境则可无缝切换至 PostgreSQL。
 
 ## 🚀 云端部署
@@ -63,9 +63,9 @@ docker run -d -p 8000:8000 --name voice_assistant ai-voice-assistant
 您可以在部署时配置以下环境变量以启用高级功能：
 - `DATABASE_URL`: PostgreSQL 数据库连接字符串（如 `postgresql://user:password@host:port/dbname`）。如不提供，则默认使用本地 SQLite。
 - `JWT_SECRET`: 用于 JWT 签名的密钥。
-- `ANTHROPIC_API_KEY`: 全局 Claude API Key（用户也可以在 UI 中输入自己的 Key）。
+- `ANTHROPIC_API_KEY`: 全局大模型 API Key（借用该变量支持任意兼容模型，用户也可以在 UI 中输入自己的 Key）。
 - `ELEVENLABS_API_KEY`: 全局 ElevenLabs API Key。
-- `ANTHROPIC_BASE_URL`: 用于配置自定义代理的 Anthropic API 接口地址。
+- `ANTHROPIC_BASE_URL`: 用于配置自定义代理的大模型 API 接口地址。
 
 ## 📄 开源协议
 MIT License
