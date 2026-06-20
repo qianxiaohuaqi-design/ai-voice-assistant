@@ -152,15 +152,21 @@ def register_user(req: UserAuthPayload, db: Session = Depends(get_db)):
 
 @app.post("/api/login")
 def login_user(req: UserAuthPayload, db: Session = Depends(get_db)):
-    username = req.username.strip()
-    password = req.password
-    
-    user = db.query(User).filter(User.username == username).first()
-    if not user or not verify_password(user.password_hash, password):
-        raise HTTPException(status_code=400, detail="用户名或密码错误")
+    try:
+        username = req.username.strip()
+        password = req.password
         
-    token = create_jwt_token(username)
-    return {"status": "success", "token": token}
+        user = db.query(User).filter(User.username == username).first()
+        if not user or not verify_password(user.password_hash, password):
+            raise HTTPException(status_code=400, detail="用户名或密码错误")
+            
+        token = create_jwt_token(username)
+        return {"status": "success", "token": token}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        raise HTTPException(status_code=500, detail=f"DB Error: {str(e)} | {traceback.format_exc()}")
 
 @app.get("/api/user/sync")
 def sync_load(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
