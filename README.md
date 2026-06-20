@@ -1,71 +1,71 @@
-# AI Voice Assistant
+# AI 语音助手 (AI Voice Assistant)
 
-A modern, full-stack AI Voice Assistant application powered by Anthropic's Claude models and offering a dual Text-to-Speech (TTS) engine experience.
+一款现代化的全栈 AI 语音助手应用，由 Anthropic Claude 大模型提供智能对话能力，并搭载双通道文字转语音 (TTS) 引擎，为您带来极致的语音交互体验。
 
-## ✨ Features
+## ✨ 核心特性
 
-- **Intelligent Conversations**: Powered by Anthropic's Claude API for deep, contextual, and high-quality responses.
-- **Dual TTS Engine**:
-  - **ElevenLabs**: High-fidelity, ultra-realistic voice generation (requires API key).
-  - **Edge-TTS**: Built-in, keyless, and free voice generation.
-- **Modern User Interface**: Built with Vue 3, featuring a responsive design, chat history sidebar, and customizable dark/light themes.
-- **User Authentication**: Secure JWT-based login system to sync user settings, API keys, and chat history across multiple devices.
-- **Session Management**: Automatically save, retrieve, and pin important chat sessions.
-- **Highly Customizable**: Users can configure their preferred chat model (e.g., Haiku vs. Sonnet), response language, voice selection, and translation settings.
-- **Database Flexibility**: Supports both SQLite (for local development) and PostgreSQL (for production).
+- **智能对话**：接入 Anthropic Claude API，提供具有深度、上下文连贯且高质量的智能回复。
+- **双路 TTS 引擎**：
+  - **ElevenLabs**：提供超高保真、极其逼真的沉浸式语音生成（需配置 API Key）。
+  - **Edge-TTS**：内置免费、免秘钥的高质量微软语音合成。
+- **现代用户界面**：基于 Vue 3 构建，响应式设计，自带侧边栏历史会话管理，以及可自定义的深浅色主题。
+- **用户认证系统**：采用基于 JWT 的安全登录体系，实现跨设备无缝同步用户配置、API Key 及聊天记录。
+- **会话管理功能**：支持自动保存、读取以及置顶重要聊天会话。
+- **高度可定制化**：用户可以自由切换聊天模型（如 Haiku 或 Sonnet）、回复语言、TTS 声音、翻译偏好等。
+- **灵活的数据库支持**：开发环境默认支持 SQLite 开箱即用，生产环境则可无缝切换至 PostgreSQL。
 
-## 🚀 Cloud Deployment
+## 🚀 云端部署
 
 👉 **[在线体验 / Live Demo](https://ai-voice-assistant-7grc.onrender.com)**
 
-## 🛠 Tech Stack
+## 🛠 技术栈
 
-- **Backend**: FastAPI, Python 3.10, SQLAlchemy, PyJWT, Edge-TTS
-- **Frontend**: Vue 3 
-- **Database**: SQLite / PostgreSQL
-- **Deployment**: Docker ready
+- **后端**: FastAPI, Python 3.10, SQLAlchemy, PyJWT, Edge-TTS
+- **前端**: Vue 3 
+- **数据库**: SQLite / PostgreSQL
+- **部署发布**: 支持 Docker 容器化
 
-## 💻 Local Development
+## 💻 本地开发指南
 
-### 1. Clone the repository
+### 1. 克隆代码仓库
 ```bash
 git clone https://github.com/qianxiaohuaqi-design/ai-voice-assistant.git
 cd ai-voice-assistant
 ```
 
-### 2. Install dependencies
-Make sure you have Python 3.10+ installed.
+### 2. 安装后端依赖
+请确保您的设备上已安装 Python 3.10+。
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Setup Frontend
-You need to build the Vue 3 frontend project. The backend expects the compiled files to be in `frontend/dist`.
-*(Please refer to the `frontend/` directory for `npm install` and `npm run build` instructions)*
+### 3. 构建前端
+您需要构建 Vue 3 前端项目。后端服务会自动读取 `frontend/dist` 目录下的编译产物。
+*(进入 `frontend/` 目录执行 `npm install` 与 `npm run build` 以完成构建)*
 
-### 4. Run the Backend Server
+### 4. 启动后端服务
 ```bash
 uvicorn web_app:app --host 127.0.0.1 --port 8000 --reload
 ```
-Access the application at `http://127.0.0.1:8000`.
+服务启动后，可在浏览器中访问 `http://127.0.0.1:8000`。
 
-## 🐳 Docker Deployment
+## 🐳 Docker 部署
 
-The project includes a `Dockerfile` for easy containerization.
+项目根目录已提供 `Dockerfile`，支持一键容器化部署。
 
 ```bash
 docker build -t ai-voice-assistant .
 docker run -d -p 8000:8000 --name voice_assistant ai-voice-assistant
 ```
 
-## 🔒 Environment Variables (Optional)
+## 🔒 环境变量配置 (可选)
 
-You can configure the following environment variables for deployment:
-- `DATABASE_URL`: PostgreSQL connection string (e.g., `postgresql://user:password@host:port/dbname`). Defaults to local SQLite if not provided.
-- `JWT_SECRET`: Secret key for JWT signature.
-- `ANTHROPIC_API_KEY`: Global Claude API key (users can also provide their own in the UI).
-- `ELEVENLABS_API_KEY`: Global ElevenLabs API key.
-- `ANTHROPIC_BASE_URL`: Custom base URL for Anthropic API proxy.
+您可以在部署时配置以下环境变量以启用高级功能：
+- `DATABASE_URL`: PostgreSQL 数据库连接字符串（如 `postgresql://user:password@host:port/dbname`）。如不提供，则默认使用本地 SQLite。
+- `JWT_SECRET`: 用于 JWT 签名的密钥。
+- `ANTHROPIC_API_KEY`: 全局 Claude API Key（用户也可以在 UI 中输入自己的 Key）。
+- `ELEVENLABS_API_KEY`: 全局 ElevenLabs API Key。
+- `ANTHROPIC_BASE_URL`: 用于配置自定义代理的 Anthropic API 接口地址。
 
-## 📄 License
+## 📄 开源协议
 MIT License
