@@ -1,18 +1,22 @@
 import { ref } from 'vue'
 
+// --- Global singleton state ---
 const isAuthModalOpen = ref(false)
 const isAuthenticated = ref(false)
-const username = ref('')
+const token = ref(localStorage.getItem('auth_token') || '')
+const username = ref(localStorage.getItem('username') || '')
 
 export function useAuth() {
   const checkLoginStatus = () => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) {
+    const savedToken = localStorage.getItem('auth_token')
+    if (!savedToken) {
       isAuthModalOpen.value = true
       isAuthenticated.value = false
+      token.value = ''
     } else {
       isAuthModalOpen.value = false
       isAuthenticated.value = true
+      token.value = savedToken
       username.value = localStorage.getItem('username') || ''
     }
   }
@@ -33,24 +37,29 @@ export function useAuth() {
       }
       
       localStorage.setItem('auth_token', data.token)
-      localStorage.setItem('username', user) // store username on login
+      localStorage.setItem('username', user)
+      token.value = data.token
+      username.value = user
       checkLoginStatus()
-      // Note: In a real implementation we might trigger syncLoadFromServer here
       return null // No error
     } catch (err) {
       console.error(err)
       return '连接服务器失败'
     }
   }
+
   const logout = () => {
     localStorage.removeItem('auth_token')
     localStorage.removeItem('username')
+    token.value = ''
+    username.value = ''
     checkLoginStatus()
   }
 
   return {
     isAuthModalOpen,
     isAuthenticated,
+    token,
     username,
     checkLoginStatus,
     login,

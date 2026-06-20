@@ -1,11 +1,41 @@
 import { ref } from 'vue'
 
+// --- Global singleton state ---
 const isOrbMode = ref(false)
 const sessions = ref([])
 const activeSessionId = ref(null)
 const chatHistory = ref([])
 
+let isInitialized = false
+
 export function useChat() {
+  const initSessions = () => {
+    if (isInitialized) return
+    const saved = localStorage.getItem('chat_sessions')
+    if (saved) {
+      try {
+        sessions.value = JSON.parse(saved)
+        const active = localStorage.getItem('active_session_id')
+        if (active && sessions.value.find(s => s.id === active)) {
+          activeSessionId.value = active
+          chatHistory.value = sessions.value.find(s => s.id === active).messages || []
+        } else if (sessions.value.length > 0) {
+          activeSessionId.value = sessions.value[0].id
+          chatHistory.value = sessions.value[0].messages || []
+        }
+      } catch (e) {
+        sessions.value = []
+      }
+    }
+    if (sessions.value.length === 0) {
+      // Defer creating new session until the function finishes returning
+      setTimeout(() => {
+        createNewSession()
+      }, 0)
+    }
+    isInitialized = true
+  }
+
   const saveSessions = () => {
     const activeSession = sessions.value.find(s => s.id === activeSessionId.value)
     if (activeSession) {
@@ -13,7 +43,6 @@ export function useChat() {
     }
     localStorage.setItem('chat_sessions', JSON.stringify(sessions.value))
     localStorage.setItem('active_session_id', activeSessionId.value)
-    // Note: in a full implementation, we trigger syncSaveToServer here
   }
 
   const createNewSession = () => {
@@ -139,6 +168,9 @@ export function useChat() {
       throw err
     }
   }
+
+  // Initialize on first call
+  initSessions()
 
   return {
     isOrbMode,
