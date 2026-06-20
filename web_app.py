@@ -70,21 +70,21 @@ class ChatRequest(BaseModel):
     edge_voice: Optional[str] = "zh-CN-XiaoxiaoNeural"
 
 
-# Ensure the static directory exists for the frontend files
-os.makedirs("static", exist_ok=True)
+# Ensure the dist directory exists for the frontend files
+os.makedirs("frontend/dist", exist_ok=True)
 
 # Mount static files to serve the HTML/CSS/JS frontend
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
 @app.get("/", response_class=HTMLResponse)
 def get_index():
-    """Serves the main landing page from the static directory."""
-    index_path = os.path.join("static", "index.html")
+    """Serves the main landing page from the frontend/dist directory."""
+    index_path = os.path.join("frontend", "dist", "index.html")
     if os.path.exists(index_path):
         with open(index_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse(
-        content="<h1>Server is running, but static/index.html is missing.</h1>", 
+        content="<h1>Server is running, but frontend/dist/index.html is missing.</h1>", 
         status_code=404
     )
 
