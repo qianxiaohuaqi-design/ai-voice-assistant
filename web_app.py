@@ -94,8 +94,8 @@ def serve_index():
 def get_config_endpoint():
     """Returns whether the server has API keys configured in environment variables."""
     return {
-        "has_anthropic_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
-        "has_elevenlabs_key": bool(os.environ.get("ELEVENLABS_API_KEY")),
+        "has_anthropic_key": False,
+        "has_elevenlabs_key": False,
         "default_anthropic_base": os.environ.get("ANTHROPIC_BASE_URL", "")
     }
 
@@ -270,7 +270,7 @@ async def get_models(authorization: Optional[str] = Header(None), db: Session = 
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    anthropic_key = user.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
+    anthropic_key = user.anthropic_key
     anthropic_base = user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or ""
     anthropic_base = anthropic_base.rstrip("/")
 
@@ -311,9 +311,9 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     if not user:
         raise HTTPException(status_code=401, detail="请先登录您的账号！")
 
-    # 1. Resolve API Keys (request body > user settings > environment variables)
-    anthropic_key = request.anthropic_key or user.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
-    elevenlabs_key = request.elevenlabs_key or user.elevenlabs_key or os.environ.get("ELEVENLABS_API_KEY")
+    # 1. Resolve API Keys (request body > user settings)
+    anthropic_key = request.anthropic_key or user.anthropic_key
+    elevenlabs_key = request.elevenlabs_key or user.elevenlabs_key
     voice_id = request.voice_id or user.voice_id or os.environ.get("VOICE_ID") or "x7tNCivOKFAydss7fglA"
     
     # Resolve Model (request body > user settings > default Haiku)
