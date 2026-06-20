@@ -3734,7 +3734,7 @@
       if (!authToken) return;
       
       const aKey = localStorage.getItem('anthropic_key') || '';
-      const aBase = localStorage.getItem('anthropic_base') || 'https://api.anthropic.com';
+      const aBase = localStorage.getItem('anthropic_base') || '';
       const eKey = localStorage.getItem('elevenlabs_key') || '';
       const vId = localStorage.getItem('voice_id') || 'x7tNCivOKFAydss7fglA';
       const lang = localStorage.getItem('response_language') || 'auto';
@@ -3851,7 +3851,7 @@
         
         // Restore settings into localStorage
         localStorage.setItem('anthropic_key', data.anthropic_key || '');
-        localStorage.setItem('anthropic_base', data.anthropic_base || 'https://api.anthropic.com');
+        localStorage.setItem('anthropic_base', data.anthropic_base || '');
         localStorage.setItem('elevenlabs_key', data.elevenlabs_key || '');
         localStorage.setItem('voice_id', data.voice_id || 'x7tNCivOKFAydss7fglA');
         localStorage.setItem('response_language', data.response_language || 'auto');
@@ -4095,7 +4095,7 @@
       if (!text) return;
 
       const aKey = localStorage.getItem('anthropic_key');
-      const aBase = localStorage.getItem('anthropic_base') || 'https://api.anthropic.com';
+      const aBase = localStorage.getItem('anthropic_base') || '';
       const model = localStorage.getItem('chat_model') || 'claude-3-5-haiku-20241022';
       const eKey = localStorage.getItem('elevenlabs_key');
       const vId = localStorage.getItem('voice_id') || 'x7tNCivOKFAydss7fglA';
