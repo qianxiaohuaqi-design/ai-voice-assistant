@@ -8,11 +8,12 @@ import jwt
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from models import SessionLocal, init_db, User, ChatSession, hash_password, verify_password
+from models import SessionLocal, init_db, User, ChatSession, hash_password, verify_password, AudioFile
 
 # Initialize Database Schema
 init_db()
@@ -489,11 +490,11 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
                     if chunk["type"] == "audio":
                         audio_bytes += chunk["data"]
                 if audio_bytes:
-                    os.makedirs("static/audio", exist_ok=True)
-                    audio_filename = f"{uuid.uuid4().hex}.mp3"
-                    with open(f"static/audio/{audio_filename}", "wb") as f:
-                        f.write(audio_bytes)
-                    audio_data_uri = f"/old/audio/{audio_filename}"
+                    audio_id = uuid.uuid4().hex
+                    db_audio = AudioFile(id=audio_id, data=audio_bytes)
+                    db.add(db_audio)
+                    db.commit()
+                    audio_data_uri = f"/api/audio/{audio_id}"
                 else:
                     tts_error = "Edge-TTS generated empty audio output."
             except Exception as e:
@@ -518,11 +519,11 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
             try:
                 tts_response = requests.post(tts_url, json=tts_payload, headers=tts_headers, timeout=20)
                 if tts_response.status_code == 200:
-                    os.makedirs("static/audio", exist_ok=True)
-                    audio_filename = f"{uuid.uuid4().hex}.mp3"
-                    with open(f"static/audio/{audio_filename}", "wb") as f:
-                        f.write(tts_response.content)
-                    audio_data_uri = f"/old/audio/{audio_filename}"
+                    audio_id = uuid.uuid4().hex
+                    db_audio = AudioFile(id=audio_id, data=tts_response.content)
+                    db.add(db_audio)
+                    db.commit()
+                    audio_data_uri = f"/api/audio/{audio_id}"
                 else:
                     tts_error = f"ElevenLabs API Error ({tts_response.status_code}): {tts_response.text}"
                     print(f"TTS Error: {tts_error}")
@@ -535,6 +536,13 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
         "audio": audio_data_uri,
         "error": tts_error
     }
+
+@app.get("/api/audio/{audio_id}")
+def get_audio(audio_id: str, db: Session = Depends(get_db)):
+    db_audio = db.query(AudioFile).filter(AudioFile.id == audio_id).first()
+    if not db_audio:
+        raise HTTPException(status_code=404, detail="Audio not found")
+    return Response(content=db_audio.data, media_type="audio/mpeg")
 
 if __name__ == "__main__":
     print("Starting FastAPI Voice Server...")

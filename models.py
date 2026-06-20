@@ -1,7 +1,7 @@
 import os
 import hashlib
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -64,6 +64,12 @@ class ChatSession(Base):
     is_pinned = Column(Boolean, default=False)
     
     user = relationship("User", back_populates="sessions")
+
+class AudioFile(Base):
+    __tablename__ = "audio_files"
+    id = Column(String, primary_key=True, index=True)
+    data = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 # Utility functions for secure password hashing (PBKDF2 with salt)
 def hash_password(password: str) -> str:
