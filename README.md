@@ -16,7 +16,7 @@ A modern, full-stack AI Voice Assistant application powered by Anthropic's Claud
 
 ## 🚀 Cloud Deployment
 
-👉 **[在线体验 / Live Demo](在此处替换为云端部署好的链接)**
+👉 **[在线体验 / Live Demo](https://ai-voice-assistant-7grc.onrender.com)**
 
 ## 🛠 Tech Stack
 
