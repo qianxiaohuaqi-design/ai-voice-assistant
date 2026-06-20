@@ -11,6 +11,10 @@ if DATABASE_URL:
     # SQLAlchemy requires 'postgresql://' protocol scheme
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+    # Supabase specific fix: Use session pooler (5432) instead of transaction pooler (6543) for ORMs
+    if "supabase" in DATABASE_URL and ":6543" in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace(":6543", ":5432")
 else:
     DATABASE_URL = "sqlite:///data.db"
 
@@ -92,5 +96,10 @@ def init_db():
     try:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE"))
+    except Exception:
+        pass
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN custom_voices TEXT"))
     except Exception:
         pass
