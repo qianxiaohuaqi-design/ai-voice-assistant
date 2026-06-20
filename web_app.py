@@ -3,11 +3,12 @@ import base64
 import requests
 import uvicorn
 import re
+import uuid
 import jwt
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
@@ -73,20 +74,21 @@ class ChatRequest(BaseModel):
 # Ensure the dist directory exists for the frontend files
 os.makedirs("frontend/dist", exist_ok=True)
 
-# Mount static files to serve the HTML/CSS/JS frontend
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+# Optionally mount the Vue static frontend assets
+if os.path.isdir("frontend/dist/assets"):
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
-@app.get("/", response_class=HTMLResponse)
-def get_index():
-    """Serves the main landing page from the frontend/dist directory."""
-    index_path = os.path.join("frontend", "dist", "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
+# Mount the older static files to the /old path
+app.mount("/old", StaticFiles(directory="static", html=True), name="old_static")
+
+@app.get("/")
+def serve_index():
+    if os.path.isfile("frontend/dist/index.html"):
+        with open("frontend/dist/index.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse(
-        content="<h1>Server is running, but frontend/dist/index.html is missing.</h1>", 
-        status_code=404
-    )
+    else:
+        # Fallback to the old version
+        return RedirectResponse(url="/old/")
 
 @app.get("/api/config")
 def get_config_endpoint():
@@ -382,7 +384,7 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     if request.response_language and request.response_language != "auto":
         system_instruction += f" You MUST respond ONLY in {request.response_language}."
         if translate_enabled:
-            system_instruction += f"\nIMPORTANT: You must translate every single sentence of your response into {target_lang_name}.\nFormat strictly: Append the translation inside a '<translation>' block directly after EACH sentence.\nExample: Hello, how are you? <translation>你好，你怎么样？</translation>\nIf your output sentence is ALREADY in {target_lang_name}, DO NOT output a <translation> tag for it."
+            system_instruction += f"\nIMPORTANT: Even though you must respond in {request.response_language}, you are REQUIRED to provide a {target_lang_name} translation for every single sentence. This translation block DOES NOT violate the 'ONLY in {request.response_language}' rule. Format strictly: Append the translation inside a '<translation>' block directly after EACH sentence.\nExample: Hello, how are you? <translation>你好，你怎么样？</translation>\nIf your output sentence is ALREADY in {target_lang_name}, DO NOT output a <translation> tag for it."
     else:
         if translate_enabled:
             system_instruction += f"\nIMPORTANT: You must translate every single sentence of your response into {target_lang_name}.\nFormat strictly: Append the translation inside a '<translation>' block directly after EACH sentence.\nExample: Hello, how are you? <translation>你好，你怎么样？</translation>\nIf your output sentence is ALREADY in {target_lang_name}, DO NOT output a <translation> tag for it."
@@ -481,8 +483,11 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
                     if chunk["type"] == "audio":
                         audio_bytes += chunk["data"]
                 if audio_bytes:
-                    audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
-                    audio_data_uri = f"data:audio/mpeg;base64,{audio_base64}"
+                    os.makedirs("static/audio", exist_ok=True)
+                    audio_filename = f"{uuid.uuid4().hex}.mp3"
+                    with open(f"static/audio/{audio_filename}", "wb") as f:
+                        f.write(audio_bytes)
+                    audio_data_uri = f"/old/audio/{audio_filename}"
                 else:
                     tts_error = "Edge-TTS generated empty audio output."
             except Exception as e:
@@ -507,8 +512,11 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
             try:
                 tts_response = requests.post(tts_url, json=tts_payload, headers=tts_headers, timeout=20)
                 if tts_response.status_code == 200:
-                    audio_base64 = base64.b64encode(tts_response.content).decode("utf-8")
-                    audio_data_uri = f"data:audio/mpeg;base64,{audio_base64}"
+                    os.makedirs("static/audio", exist_ok=True)
+                    audio_filename = f"{uuid.uuid4().hex}.mp3"
+                    with open(f"static/audio/{audio_filename}", "wb") as f:
+                        f.write(tts_response.content)
+                    audio_data_uri = f"/old/audio/{audio_filename}"
                 else:
                     tts_error = f"ElevenLabs API Error ({tts_response.status_code}): {tts_response.text}"
                     print(f"TTS Error: {tts_error}")

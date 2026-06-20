@@ -21,3 +21,6 @@ claude_desktop_config.json
 # SQLite databases
 *.db
 data.db
+
+# Exclude new frontend temporarily
+frontend/

@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   
   <!-- Local Markdown parsing and sanitization -->
-  <script src="/static/vendor/purify.min.js"></script>
-  <script src="/static/vendor/marked.min.js"></script>
+  <script src="./vendor/purify.min.js"></script>
+  <script src="./vendor/marked.min.js"></script>
 
   <style>
     :root {
@@ -2603,14 +2603,6 @@
               </div>
             </div>
           </div>
-          <!-- Orb Font Size -->
-          <div class="form-group">
-            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-              星云模式文字大小
-              <span id="orb-font-size-val" style="color: var(--neon-cyan); font-weight: 600; font-size: 0.85rem;">16px</span>
-            </label>
-            <input type="range" id="orb-font-size" min="12" max="36" step="1" value="16" class="form-input" style="width: 100%; padding: 0;" oninput="document.getElementById('orb-font-size-val').innerText = this.value + 'px';">
-          </div>
 
           <!-- Voice Management Area -->
           <div class="voice-management-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 18px;">
@@ -2654,7 +2646,7 @@
       </div>
       
       <div class="modal-footer" style="display: flex; gap: 10px;">
-        <button class="save-btn" onclick="saveSettings()" style="flex: 1.5; margin-top: 0;">保存并关闭</button>
+        <button class="save-btn" onclick="saveSettings()" style="flex: 1; margin-top: 0;">保存并关闭</button>
         <button class="save-btn" onclick="handleLogout()" style="flex: 1; margin-top: 0; background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);">退出登录</button>
       </div>
     </div>
@@ -2885,23 +2877,23 @@
         const titleWrapper = document.createElement('div');
         titleWrapper.className = 'session-title-wrapper';
         titleWrapper.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events: none;">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
-          <span class="session-title">${escapeHTML(s.title)}</span>
+          <span class="session-title" style="pointer-events: none;">${escapeHTML(s.title)}</span>
         `;
         
         const actions = document.createElement('div');
         actions.className = 'session-actions';
         actions.innerHTML = `
           <button class="session-action-btn session-rename-btn" title="重命名对话" style="margin-right: 4px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>
           </button>
           <button class="session-action-btn session-delete-btn" title="删除对话">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events: none;">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
@@ -3025,8 +3017,12 @@
         return;
       }
       
-      chatHistory.forEach(msg => {
-        appendMessage(msg.role === 'assistant' ? 'ai' : 'user', msg.content);
+      chatHistory.forEach((msg, idx) => {
+        const msgId = msg.id || ('hist-msg-' + idx);
+        appendMessage(msg.role === 'assistant' ? 'ai' : 'user', msg.content, msgId);
+        if (msg.audio) {
+          ensureAudioButton(msgId, msg.audio, false);
+        }
       });
       
       if (currentViewMode === 'orb' && chatHistory.length > 0) {
@@ -3541,8 +3537,6 @@
       setCustomSelectValue('translate-target-dropdown', localStorage.getItem('translate_target') || 'Chinese');
       setCustomSelectValue('tts-mode-dropdown', localStorage.getItem('tts_mode') || 'elevenlabs');
       setCustomSelectValue('edge-voice-dropdown', localStorage.getItem('edge_voice') || 'zh-CN-XiaoxiaoNeural');
-      document.getElementById('orb-font-size').value = localStorage.getItem('orb_font_size') || '16';
-      document.getElementById('orb-font-size-val').innerText = (localStorage.getItem('orb_font_size') || '16') + 'px';
       
       const transSwitch = document.getElementById('translate-enable-switch');
       if(localStorage.getItem('translate_enable') === 'true') {
@@ -3646,9 +3640,7 @@
       localStorage.setItem('translate_target', transTarget);
       localStorage.setItem('tts_mode', ttsMode);
       localStorage.setItem('edge_voice', edgeVoice);
-      const orbFontSize = document.getElementById('orb-font-size').value;
-      localStorage.setItem('orb_font_size', orbFontSize);
-      document.documentElement.style.setProperty('--orb-subtitle-size', orbFontSize + 'px');
+
       
       updateHUDModelInfo();
       renderChatUI(); // Re-render chat UI to immediately apply new translation / settings
@@ -4198,7 +4190,7 @@
           typewriteSubtitle(data.text, !isMuted && data.audio);
         }
 
-        chatHistory.push({ role: 'assistant', content: data.text });
+        chatHistory.push({ role: 'assistant', content: data.text, audio: data.audio, id: aiMessageId });
         saveSessions();
 
         if (!isMuted && data.audio) {
@@ -4394,9 +4386,26 @@
           const trans = match[2] ? match[2].trim() : '';
           if (!eng && !trans) continue;
           
-          sentences.push({
-            text: cleanMarkdown(eng),
-            translation: cleanMarkdown(trans)
+          const engParts = eng.split(/(?<=[。！？.!?])\s*/).filter(p => p.trim());
+          const transParts = trans ? trans.split(/(?<=[。！？.!?])\s*/).filter(p => p.trim()) : [];
+          
+          if (engParts.length === 0) {
+            sentences.push({
+              text: cleanMarkdown(eng),
+              translation: cleanMarkdown(trans)
+            });
+            continue;
+          }
+          
+          engParts.forEach((part, i) => {
+            let tPart = transParts[i] || '';
+            if (i === engParts.length - 1 && transParts.length > engParts.length) {
+              tPart = transParts.slice(i).join(' ');
+            }
+            sentences.push({
+              text: cleanMarkdown(part),
+              translation: cleanMarkdown(tPart)
+            });
           });
         }
       } else {
@@ -5168,6 +5177,51 @@
       }
     }
 
+    function ensureAudioButton(messageId, audioUrl, isPlaying) {
+      const row = document.getElementById(messageId);
+      const bubble = row ? row.querySelector('.bubble') : null;
+      if (!bubble) return null;
+      
+      let audioBtn = bubble.querySelector('.bubble-audio-btn');
+      if (!audioBtn) {
+        audioBtn = document.createElement('div');
+        audioBtn.className = 'bubble-audio-btn';
+        audioBtn.innerHTML = `
+          <svg class="play-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:${isPlaying ? 'none' : 'block'}">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <div class="waveform-visualizer ${isPlaying ? 'playing' : ''}">
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+          </div>
+          <span>${isPlaying ? '正在播放语音' : '重新播放'}</span>
+        `;
+        bubble.appendChild(audioBtn);
+        
+        audioBtn.onclick = function(e) {
+          e.stopPropagation();
+          playSpeech(messageId, audioUrl);
+        };
+      } else {
+        const playIcon = audioBtn.querySelector('.play-icon');
+        const visualizer = audioBtn.querySelector('.waveform-visualizer');
+        const textSpan = audioBtn.querySelector('span');
+        if (isPlaying) {
+          if (playIcon) playIcon.style.display = 'none';
+          if (visualizer) visualizer.classList.add('playing');
+          if (textSpan) textSpan.innerText = '正在播放语音';
+        } else {
+          if (playIcon) playIcon.style.display = 'block';
+          if (visualizer) visualizer.classList.remove('playing');
+          if (textSpan) textSpan.innerText = '重新播放';
+        }
+      }
+      return audioBtn;
+    }
+
     function playSpeech(messageId, base64Audio) {
       const audio = getGlobalAudio();
       
@@ -5195,35 +5249,7 @@
       stopAllWaveforms();
       stopOrbAnimation();
 
-      const row = document.getElementById(messageId);
-      const bubble = row ? row.querySelector('.bubble') : null;
-      
-      if (bubble) {
-        let audioBtn = bubble.querySelector('.bubble-audio-btn');
-        if (!audioBtn) {
-          audioBtn = document.createElement('div');
-          audioBtn.className = 'bubble-audio-btn';
-          audioBtn.innerHTML = `
-            <svg class="play-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:none">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            <div class="waveform-visualizer">
-              <div class="wave-bar"></div>
-              <div class="wave-bar"></div>
-              <div class="wave-bar"></div>
-              <div class="wave-bar"></div>
-              <div class="wave-bar"></div>
-            </div>
-            <span>正在播放语音</span>
-          `;
-          bubble.appendChild(audioBtn);
-          
-          audioBtn.onclick = function(e) {
-            e.stopPropagation();
-            playSpeech(messageId, base64Audio);
-          };
-        }
-      }
+      ensureAudioButton(messageId, base64Audio, true);
 
       audio.play().catch(e => {
         console.error('Audio playback failed', e);
