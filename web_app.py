@@ -94,7 +94,7 @@ def get_config_endpoint():
     return {
         "has_anthropic_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
         "has_elevenlabs_key": bool(os.environ.get("ELEVENLABS_API_KEY")),
-        "default_anthropic_base": os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
+        "default_anthropic_base": os.environ.get("ANTHROPIC_BASE_URL", "")
     }
 
 # New schemas for authentication & sync
@@ -122,6 +122,7 @@ class SyncPayload(BaseModel):
     is_muted: Optional[bool] = False
     tts_mode: Optional[str] = "elevenlabs"
     edge_voice: Optional[str] = "zh-CN-XiaoxiaoNeural"
+    custom_voices: Optional[str] = "[]"
     sessions: List[SessionSyncItem] = []
 
 @app.post("/api/register")
@@ -180,7 +181,7 @@ def sync_load(authorization: Optional[str] = Header(None), db: Session = Depends
         
     return {
         "anthropic_key": user.anthropic_key or "",
-        "anthropic_base": user.anthropic_base or "https://api.anthropic.com",
+        "anthropic_base": user.anthropic_base or "",
         "elevenlabs_key": user.elevenlabs_key or "",
         "voice_id": user.voice_id or "x7tNCivOKFAydss7fglA",
         "chat_model": user.chat_model or "deepseek-chat",
@@ -192,6 +193,7 @@ def sync_load(authorization: Optional[str] = Header(None), db: Session = Depends
         "is_muted": user.is_muted or False,
         "tts_mode": user.tts_mode or "elevenlabs",
         "edge_voice": user.edge_voice or "zh-CN-XiaoxiaoNeural",
+        "custom_voices": user.custom_voices or "[]",
         "sessions": sessions_data
     }
 
@@ -218,6 +220,7 @@ def sync_save(req: SyncPayload, authorization: Optional[str] = Header(None), db:
     user.is_muted = req.is_muted
     user.tts_mode = req.tts_mode or "elevenlabs"
     user.edge_voice = req.edge_voice or "zh-CN-XiaoxiaoNeural"
+    user.custom_voices = req.custom_voices or "[]"
     
     # Update sessions (insert/update/delete)
     existing_sessions = db.query(ChatSession).filter(ChatSession.user_id == user.id).all()
@@ -260,24 +263,30 @@ async def get_models(authorization: Optional[str] = Header(None), db: Session = 
         raise HTTPException(status_code=401, detail="Invalid token")
 
     anthropic_key = user.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
-    anthropic_base = user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or "https://api.anthropic.com"
+    anthropic_base = user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or ""
     anthropic_base = anthropic_base.rstrip("/")
 
     if not anthropic_key:
         return {"data": [{"id": "deepseek-chat"}, {"id": "claude-3-5-sonnet-20241022"}]}
 
     try:
-        if "api.anthropic.com" in anthropic_base:
-            return {"data": [{"id": "claude-3-5-sonnet-20241022"}, {"id": "claude-3-5-haiku-20241022"}, {"id": "claude-3-opus-20240229"}]}
+        if not anthropic_base:
+            return {"data": [{"id": "deepseek-chat"}, {"id": "deepseek-reasoner"}, {"id": "claude-3-5-sonnet-20241022"}, {"id": "claude-3-5-haiku-20241022"}, {"id": "gpt-4o"}, {"id": "grok-beta"}]}
+        elif "api.deepseek.com" in anthropic_base:
+            return {"data": [{"id": "deepseek-chat"}, {"id": "deepseek-reasoner"}]}
+        elif "api.anthropic.com" in anthropic_base:
+            return {"data": [{"id": "claude-3-5-sonnet-20241022"}, {"id": "claude-3-5-haiku-20241022"}]}
+        elif "api.openai.com" in anthropic_base:
+            return {"data": [{"id": "gpt-4o"}, {"id": "gpt-4o-mini"}]}
         
         headers = {"Authorization": f"Bearer {anthropic_key}", "Content-Type": "application/json"}
         resp = requests.get(f"{anthropic_base}/v1/models", headers=headers, timeout=5)
         if resp.ok:
             return resp.json()
         else:
-            return {"data": [{"id": "deepseek-chat"}, {"id": "claude-3-5-sonnet-20241022"}]}
+            return {"data": [{"id": "deepseek-chat"}, {"id": "deepseek-reasoner"}, {"id": "claude-3-5-sonnet-20241022"}, {"id": "gpt-4o"}]}
     except Exception:
-        return {"data": [{"id": "deepseek-chat"}, {"id": "claude-3-5-sonnet-20241022"}]}
+        return {"data": [{"id": "deepseek-chat"}, {"id": "deepseek-reasoner"}, {"id": "claude-3-5-sonnet-20241022"}, {"id": "gpt-4o"}]}
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
@@ -305,9 +314,22 @@ async def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Hea
     # Resolve ElevenLabs Model (request body > user settings > default)
     elevenlabs_model = request.elevenlabs_model or user.elevenlabs_model or "eleven_multilingual_v2"
     
-    # Resolve Anthropic Base URL (request body > user settings > environment variable > default official URL)
-    anthropic_base = request.anthropic_base or user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or "https://api.anthropic.com"
+    # Resolve Anthropic Base URL (request body > user settings > environment variable)
+    anthropic_base = request.anthropic_base or user.anthropic_base or os.environ.get("ANTHROPIC_BASE_URL") or ""
     anthropic_base = anthropic_base.rstrip("/")
+    if not anthropic_base:
+        if model.startswith("claude-"):
+            anthropic_base = "https://api.anthropic.com"
+        elif model.startswith("deepseek-"):
+            anthropic_base = "https://api.deepseek.com"
+        elif model.startswith("gpt-") or model.startswith("o1-") or model.startswith("o3-"):
+            anthropic_base = "https://api.openai.com"
+        elif model.startswith("grok-"):
+            anthropic_base = "https://api.x.ai"
+        elif model.startswith("gemini-"):
+            anthropic_base = "https://generativelanguage.googleapis.com/v1beta/openai"
+        else:
+            anthropic_base = "https://api.anthropic.com"
 
     # Resolve TTS enabled state
     tts_enabled = request.tts_enabled if request.tts_enabled is not None else True

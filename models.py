@@ -45,6 +45,7 @@ class User(Base):
     is_muted = Column(Boolean, default=False)
     tts_mode = Column(String, default="elevenlabs")
     edge_voice = Column(String, default="zh-CN-XiaoxiaoNeural")
+    custom_voices = Column(Text, default="[]")
     
     sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
 

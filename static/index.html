@@ -2643,7 +2643,7 @@
 
           <div class="form-group">
             <label class="form-label" for="anthropic-base">API BASE URL (自定义中转/代理接口地址)</label>
-            <input type="text" class="form-input" id="anthropic-base" placeholder="如使用代理/中转接口请在此填写，官方直连请留空">
+            <input type="text" class="form-input" id="anthropic-base" placeholder="使用官方接口请留空，系统将根据选择的模型自动识别">
           </div>
           
           <div class="form-group">
@@ -3080,7 +3080,7 @@
 
     function updateHUDModelInfo() {
       // 1. AI model update
-      const model = document.getElementById('chat-model').value || localStorage.getItem('chat_model') || 'deepseek-chat';
+      const model = localStorage.getItem('chat_model') || 'deepseek-chat';
       const techModelVal = document.getElementById('tech-model-val');
       if (techModelVal) {
         let cleanModelName = model;
@@ -3532,7 +3532,7 @@
     function openModal() {
 
       document.getElementById('anthropic-key').value = localStorage.getItem('anthropic_key') || '';
-      document.getElementById('anthropic-base').value = localStorage.getItem('anthropic_base') || (window.serverConfig ? window.serverConfig.default_anthropic_base : 'https://api.anthropic.com');
+      document.getElementById('anthropic-base').value = localStorage.getItem('anthropic_base') || (window.serverConfig ? window.serverConfig.default_anthropic_base : '');
       document.getElementById('elevenlabs-key').value = localStorage.getItem('elevenlabs_key') || '';
       setCustomSelectValue('chat-model-dropdown', localStorage.getItem('chat_model') || 'deepseek-chat');
       setCustomSelectValue('response-language-dropdown', localStorage.getItem('response_language') || 'auto');
@@ -3620,7 +3620,7 @@
     // Save configurations
     function saveSettings() {
       const aKey = document.getElementById('anthropic-key').value.trim();
-      const aBase = document.getElementById('anthropic-base').value.trim() || 'https://api.anthropic.com';
+      const aBase = document.getElementById('anthropic-base').value.trim();
       const eKey = document.getElementById('elevenlabs-key').value.trim();
       const lang = document.getElementById('response-language').value;
       const cModel = document.getElementById('chat-model').value || 'deepseek-chat';
@@ -3734,6 +3734,7 @@
       localStorage.removeItem('active_session_id');
       localStorage.removeItem('anthropic_key');
       localStorage.removeItem('elevenlabs_key');
+      localStorage.removeItem('custom_voices');
       location.reload();
     }
 
@@ -3750,6 +3751,8 @@
       const transTarget = localStorage.getItem('translate_target') || 'Chinese';
       const theme = localStorage.getItem('ui_theme') || 'dark';
       const muted = localStorage.getItem('is_muted') === 'true';
+      const ttsMode = localStorage.getItem('tts_mode') || 'elevenlabs';
+      const edgeVoice = localStorage.getItem('edge_voice') || 'zh-CN-XiaoxiaoNeural';
       
       const syncSessions = sessions.map(s => ({
         id: s.id,
@@ -3779,6 +3782,7 @@
             is_muted: muted,
             tts_mode: ttsMode,
             edge_voice: edgeVoice,
+            custom_voices: localStorage.getItem('custom_voices') || '[]',
             sessions: syncSessions
           })
         });
@@ -3860,16 +3864,18 @@
         localStorage.setItem('voice_id', data.voice_id || 'x7tNCivOKFAydss7fglA');
         localStorage.setItem('response_language', data.response_language || 'auto');
         localStorage.setItem('elevenlabs_model', data.elevenlabs_model || 'eleven_multilingual_v2');
+        localStorage.setItem('chat_model', data.chat_model || 'claude-3-5-haiku-20241022');
         localStorage.setItem('translate_enable', data.translate_enabled ? 'true' : 'false');
         localStorage.setItem('translate_target', data.translate_target || 'Chinese');
         localStorage.setItem('tts_mode', data.tts_mode || 'elevenlabs');
         localStorage.setItem('edge_voice', data.edge_voice || 'zh-CN-XiaoxiaoNeural');
         localStorage.setItem('ui_theme', data.ui_theme || 'dark');
         localStorage.setItem('is_muted', data.is_muted ? 'true' : 'false');
+        localStorage.setItem('custom_voices', data.custom_voices || '[]');
         
         // Set setting input values
         document.getElementById('anthropic-key').value = data.anthropic_key || '';
-        document.getElementById('anthropic-base').value = data.anthropic_base || 'https://api.anthropic.com';
+        document.getElementById('anthropic-base').value = data.anthropic_base || '';
         document.getElementById('elevenlabs-key').value = data.elevenlabs_key || '';
         
         const modelSelect = document.getElementById('chat-model');
@@ -3923,6 +3929,7 @@
           createNewSession(true);
         }
         
+        saveSessions();
         renderSessionsList();
         loadVoicesList();
         updateHUDModelInfo();
@@ -4097,7 +4104,7 @@
 
       const aKey = localStorage.getItem('anthropic_key');
       const aBase = localStorage.getItem('anthropic_base') || 'https://api.anthropic.com';
-      const model = document.getElementById('chat-model').value || 'claude-3-5-haiku-20241022';
+      const model = localStorage.getItem('chat_model') || 'claude-3-5-haiku-20241022';
       const eKey = localStorage.getItem('elevenlabs_key');
       const vId = localStorage.getItem('voice_id') || 'x7tNCivOKFAydss7fglA';
       const responseLang = localStorage.getItem('response_language') || 'auto';
@@ -4257,9 +4264,9 @@
       }
 
       const translations = [];
-      const translationPrefix = `__translation_${Date.now()}_${Math.random().toString(36).slice(2)}_`;
+      const translationPrefix = `TRANSLATIONPLACEHOLDER${Date.now()}X`;
       let processed = text.replace(/<translation>(.*?)<\/translation>/gs, (_, translation) => {
-        const placeholder = `${translationPrefix}${translations.length}__`;
+        const placeholder = `${translationPrefix}${translations.length}Y`;
         translations.push({
           placeholder,
           html: `<span class="translation-line">${escapeHTML(translation)}</span>`
