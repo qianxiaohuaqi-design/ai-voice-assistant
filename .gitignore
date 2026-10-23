@@ -24,3 +24,7 @@ data.db
 
 # Exclude new frontend temporarily
 frontend/
+
+# AgentSpec local recovery artifacts
+.agentspec/backups/
+.agentspec/operation.lock

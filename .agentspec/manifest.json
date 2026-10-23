@@ -1,0 +1,58 @@
+{
+  "frameworkRoot": "D:\\Project\\_expertise",
+  "managed": {
+    ".clinerules": "7133e8536f0a908305ed7f79234a8d6b38e63e293ae9e773a39f37f84e1ac00d",
+    ".cursor/rules/agentspec.mdc": "3eafa90111ab9bcef0c736dc1b627120e37a41f3624edff363bac002cd29224b",
+    ".github/copilot-instructions.md": "69c24ad14182a66086e58ee9ed18c27ae6e5c1af12e164a80ab4dc01a6f6d5d0",
+    "AGENTS.md": "f66041186d5151dfa41151fc1e57c1d7183183836ddfdd1530534d3a288bf13d",
+    "CLAUDE.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49"
+  },
+  "migrationAt": "2026-10-23T13:45:53.948697+00:00",
+  "profile": "native",
+  "recordSources": [
+    {
+      "editable": false,
+      "path": "doc/开发文档.md",
+      "role": "plan"
+    },
+    {
+      "editable": false,
+      "path": "doc/交接文档.md",
+      "role": "handoff"
+    },
+    {
+      "editable": false,
+      "path": "docs/agentspec/history/上次交接.md",
+      "role": "historical"
+    },
+    {
+      "editable": false,
+      "path": "docs/agentspec/history/产品背景.md",
+      "role": "historical"
+    },
+    {
+      "editable": false,
+      "path": "docs/agentspec/history/历史阶段记录.md",
+      "role": "historical"
+    },
+    {
+      "editable": false,
+      "path": "docs/agentspec/history/架构记录.md",
+      "role": "historical"
+    },
+    {
+      "editable": false,
+      "path": "docs/agentspec/history/环境记录.md",
+      "role": "historical"
+    },
+    {
+      "editable": false,
+      "path": "docs/agentspec/history/项目背景.md",
+      "role": "historical"
+    }
+  ],
+  "recordsRoot": null,
+  "schema": 1,
+  "toolLoading": "入口已连接；各宿主新会话加载待验证",
+  "version": "2.0.0"
+}
