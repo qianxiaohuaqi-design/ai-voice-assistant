@@ -1,0 +1,20 @@
+# Runtime data and local configuration stay on the host.
+.git
+.venv
+venv
+ENV
+__pycache__
+*.py[cod]
+*.db
+*.db-*
+.env
+.env.*
+claude_desktop_config.json
+*.log
+.tempmediaStorage
+.system_generated
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.agentspec/backups
+.agentspec/operation.lock
